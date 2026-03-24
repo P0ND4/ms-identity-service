@@ -13,6 +13,7 @@ export class FoodaExceptionFilter implements ExceptionFilter {
       message: string;
     };
 
+    (response as any).errorCode = exceptionResponse.code;
     response.status(status).json(exceptionResponse);
   }
 }
