@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 interface Environment {
   REDIS_URL?: string;
   REDIS_HOST: string;
