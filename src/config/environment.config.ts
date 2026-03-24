@@ -6,6 +6,17 @@ interface Environment {
   REDIS_USERNAME?: string;
   NODE_ENV: string;
   PORT: number;
+  DB_HOST?: string;
+  DB_PORT: number;
+  DB_USERNAME?: string;
+  DB_PASSWORD?: string;
+  DB_DATABASE?: string;
+  DB_SCHEMA: string;
+  DB_SYNCHRONIZE: boolean;
+  DB_SSL: boolean;
+  DB_POOL_MAX: number;
+  DB_POOL_MIN: number;
+  DB_LOGGING: boolean;
 }
 
 export default async (): Promise<Environment> => {
@@ -14,11 +25,27 @@ export default async (): Promise<Environment> => {
   // If you're going to use asynchronous requests for environment variables, remember to use caching or ms-cache-service.
 
   return {
+    // Redis
     REDIS_URL: process.env.REDIS_URL,
     REDIS_HOST: process.env.REDIS_HOST ?? 'localhost',
     REDIS_PORT: parseInt(process.env.REDIS_PORT ?? '6379', 10),
     REDIS_PASSWORD: process.env.REDIS_PASSWORD,
     REDIS_USERNAME: process.env.REDIS_USERNAME,
+
+    // Database
+    DB_HOST: process.env.DB_HOST,
+    DB_PORT: parseInt(process.env.DB_PORT ?? '5432', 10),
+    DB_USERNAME: process.env.DB_USERNAME,
+    DB_PASSWORD: process.env.DB_PASSWORD,
+    DB_DATABASE: process.env.DB_DATABASE,
+    DB_SCHEMA: process.env.DB_SCHEMA ?? 'public',
+    DB_SYNCHRONIZE: process.env.DB_SYNCHRONIZE === 'true',
+    DB_SSL: process.env.DB_SSL === 'true',
+    DB_POOL_MAX: parseInt(process.env.DB_POOL_MAX ?? '10', 10),
+    DB_POOL_MIN: parseInt(process.env.DB_POOL_MIN ?? '2', 10),
+    DB_LOGGING: process.env.DB_LOGGING === 'true',
+
+    // Server
     NODE_ENV: process.env.NODE_ENV ?? 'development',
     PORT: parseInt(process.env.PORT ?? '3000', 10),
   };

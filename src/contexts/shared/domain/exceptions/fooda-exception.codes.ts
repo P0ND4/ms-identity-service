@@ -23,6 +23,16 @@ export const FoodaExceptionCodes = {
   // Errores de Validación (1000-1999)
   Ex1001: new FoodaExceptionInfo(
     `${SERVICE_PREFIX}-1001`,
-    'El campo fecha es obligatorio.',
+    'El formato del correo es inválido',
+  ),
+
+  Ex1002: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1002`,
+    'La contraseña es obligatoria',
+  ),
+
+  Ex1003: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1003`,
+    'La contraseña debe tener al menos 6 caracteres',
   ),
 };
