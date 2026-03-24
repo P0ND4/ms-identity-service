@@ -32,7 +32,7 @@ export class RefreshToken {
   expiresAt!: Date;
 
   @Column({ name: 'revoked_at', nullable: true })
-  revokedAt!: Date;
+  revokedAt!: Date | null;
 
   @Column({ name: 'ip_address', nullable: true })
   ipAddress!: string;
