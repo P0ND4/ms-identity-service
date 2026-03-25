@@ -42,10 +42,6 @@ export default async (): Promise<Environment> => {
       process.env.BLACKLIST_TTL_SECONDS ?? '604800',
       10,
     ),
-    REFRESH_TOKEN_TTL_SECONDS: parseInt(
-      process.env.REFRESH_TOKEN_TTL_SECONDS ?? '604800',
-      10,
-    ),
 
     // Database
     DB_HOST: process.env.DB_HOST,
@@ -65,6 +61,10 @@ export default async (): Promise<Environment> => {
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? '1h',
     JWT_EXPIRES_IN_SECONDS: parseInt(
       process.env.JWT_EXPIRES_IN_SECONDS ?? '3600',
+      10,
+    ),
+    REFRESH_TOKEN_TTL_SECONDS: parseInt(
+      process.env.REFRESH_TOKEN_TTL_SECONDS ?? '604800',
       10,
     ),
 
