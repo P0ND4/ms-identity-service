@@ -1,9 +1,9 @@
 import { IRepository } from './repository.interface';
 import { Collaborator } from '../entities/collaborator.entity';
 
-export interface ICollaboratorRepository extends IRepository<Collaborator> {
-  findByEmail(email: string): Promise<Collaborator | null>;
-  findByEmailWithRoles(email: string): Promise<Collaborator | null>;
-  updateLastLogin(id: string): Promise<void>;
-  existsByEmail(email: string): Promise<boolean>;
+export abstract class ICollaboratorRepository extends IRepository<Collaborator> {
+  abstract findByEmail(email: string): Promise<Collaborator | null>;
+  abstract findByEmailWithRoles(email: string): Promise<Collaborator | null>;
+  abstract updateLastLogin(id: string): Promise<void>;
+  abstract existsByEmail(email: string): Promise<boolean>;
 }

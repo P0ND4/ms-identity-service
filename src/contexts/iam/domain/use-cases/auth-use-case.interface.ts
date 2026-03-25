@@ -14,6 +14,6 @@ export interface AuthResponse {
 export abstract class IAuthUseCase {
   abstract loginLocal(email: string, password: string): Promise<AuthResponse>;
   abstract refreshToken(refreshToken: string): Promise<AuthResponse>;
-  abstract logout(refreshToken: string): Promise<void>;
+  abstract logout(accessToken: string, refreshToken: string): Promise<void>;
   abstract logoutAllDevices(userId: string): Promise<void>;
 }

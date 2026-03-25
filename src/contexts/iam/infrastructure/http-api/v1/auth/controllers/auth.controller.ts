@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Headers } from '@nestjs/common';
 import { V1_IAM } from '../../../route.constants';
 import { LoginLocalDto } from '../dtos/login-local.dto';
 import { IAuthUseCase } from 'src/contexts/iam/domain/use-cases/auth-use-case.interface';
@@ -25,5 +25,10 @@ export class AuthController {
   refresh() {}
 
   @Post('logout')
-  logout() {}
+  async logout(
+    @Headers('authorization') accessToken: string,
+    @Body('refreshToken') refreshToken: string,
+  ) {
+    return await this.authService.logout(accessToken, refreshToken);
+  }
 }

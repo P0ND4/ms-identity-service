@@ -1,9 +1,9 @@
 import { IRepository } from './repository.interface';
 import { RefreshToken } from '../entities/refresh-token.entity';
 
-export interface IRefreshTokenRepository extends IRepository<RefreshToken> {
-  findByTokenHash(hash: string): Promise<RefreshToken | null>;
-  revoke(id: string): Promise<void>;
-  revokeAllByUser(userId: string): Promise<void>;
-  deleteExpired(): Promise<void>;
+export abstract class IRefreshTokenRepository extends IRepository<RefreshToken> {
+  abstract findByTokenHash(hash: string): Promise<RefreshToken | null>;
+  abstract revoke(id: string): Promise<void>;
+  abstract revokeAllByUser(userId: string): Promise<void>;
+  abstract deleteExpired(): Promise<void>;
 }

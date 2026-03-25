@@ -8,7 +8,7 @@ export abstract class TypeOrmRepository<
   constructor(protected readonly repository: Repository<T>) {}
 
   async findById(id: string): Promise<T | null> {
-    return await this.repository.findOne({ where: { id } as any });
+    return await this.repository.findOne({ where: { id } as T });
   }
 
   async findAll(): Promise<T[]> {
@@ -30,7 +30,7 @@ export abstract class TypeOrmRepository<
   }
 
   async exists(id: string): Promise<boolean> {
-    const count = await this.repository.count({ where: { id } as any });
+    const count = await this.repository.count({ where: { id } as T });
     return count > 0;
   }
 }

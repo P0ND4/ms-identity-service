@@ -1,18 +1,17 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Redis } from 'ioredis';
-
-const BLACKLIST_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 dias
+import environment from 'src/config/environment.config';
 
 @Injectable()
 export class TokenBlacklistService {
-  constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
+  constructor(@Inject('TOKEN_BLACKLIST') private readonly redis: Redis) {}
 
-  async addToBlacklist(
-    token: string,
-    expiresIn: number = BLACKLIST_TTL_SECONDS,
-  ): Promise<void> {
+  async addToBlacklist(token: string, expiresIn?: number): Promise<void> {
+    const env = await environment();
+
     const key = `blacklist:${token}`;
-    await this.redis.setex(key, expiresIn, 'revoked');
+    const ttl = expiresIn ?? env.BLACKLIST_TTL_SECONDS;
+    await this.redis.setex(key, ttl, 'revoked');
   }
 
   async isBlacklisted(token: string): Promise<boolean> {

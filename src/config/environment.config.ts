@@ -19,6 +19,11 @@ interface Environment {
   DB_POOL_MAX: number;
   DB_POOL_MIN: number;
   DB_LOGGING: boolean;
+  JWT_SECRET: string;
+  JWT_EXPIRES_IN: string;
+  JWT_EXPIRES_IN_SECONDS: number;
+  BLACKLIST_TTL_SECONDS: number;
+  REFRESH_TOKEN_TTL_SECONDS: number;
 }
 
 export default async (): Promise<Environment> => {
@@ -33,6 +38,14 @@ export default async (): Promise<Environment> => {
     REDIS_PORT: parseInt(process.env.REDIS_PORT ?? '6379', 10),
     REDIS_PASSWORD: process.env.REDIS_PASSWORD,
     REDIS_USERNAME: process.env.REDIS_USERNAME,
+    BLACKLIST_TTL_SECONDS: parseInt(
+      process.env.BLACKLIST_TTL_SECONDS ?? '604800',
+      10,
+    ),
+    REFRESH_TOKEN_TTL_SECONDS: parseInt(
+      process.env.REFRESH_TOKEN_TTL_SECONDS ?? '604800',
+      10,
+    ),
 
     // Database
     DB_HOST: process.env.DB_HOST,
@@ -46,6 +59,14 @@ export default async (): Promise<Environment> => {
     DB_POOL_MAX: parseInt(process.env.DB_POOL_MAX ?? '10', 10),
     DB_POOL_MIN: parseInt(process.env.DB_POOL_MIN ?? '2', 10),
     DB_LOGGING: process.env.DB_LOGGING === 'true',
+
+    // JWT
+    JWT_SECRET: process.env.JWT_SECRET ?? 'secret',
+    JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? '1h',
+    JWT_EXPIRES_IN_SECONDS: parseInt(
+      process.env.JWT_EXPIRES_IN_SECONDS ?? '3600',
+      10,
+    ),
 
     // Server
     NODE_ENV: process.env.NODE_ENV ?? 'development',
