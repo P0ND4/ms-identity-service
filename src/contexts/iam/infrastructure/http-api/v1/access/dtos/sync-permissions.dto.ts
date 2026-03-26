@@ -8,14 +8,15 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
+import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
 
 export class PermissionTreeNodeDto {
   @ApiProperty({
     example: 'users:manage',
     description: 'Key unica del permiso.',
   })
-  @IsString({ message: 'Ex1030' })
-  @IsNotEmpty({ message: 'Ex1031' })
+  @IsString({ message: FoodaExceptionCodes.Ex1030.message })
+  @IsNotEmpty({ message: FoodaExceptionCodes.Ex1031.message })
   key!: string;
 
   @ApiPropertyOptional({
@@ -23,7 +24,7 @@ export class PermissionTreeNodeDto {
     description: 'Descripcion opcional del permiso.',
   })
   @IsOptional()
-  @IsString({ message: 'Ex1032' })
+  @IsString({ message: FoodaExceptionCodes.Ex1032.message })
   description?: string;
 
   @ApiPropertyOptional({
@@ -31,8 +32,8 @@ export class PermissionTreeNodeDto {
     description: 'Permisos hijos para construir jerarquia.',
   })
   @IsOptional()
-  @IsArray({ message: 'Ex1033' })
-  @ValidateNested({ each: true, message: 'Ex1026' })
+  @IsArray({ message: FoodaExceptionCodes.Ex1033.message })
+  @ValidateNested({ each: true, message: FoodaExceptionCodes.Ex1026.message })
   @Type(() => PermissionTreeNodeDto)
   children?: PermissionTreeNodeDto[];
 }
@@ -42,9 +43,9 @@ export class SyncPermissionsDto {
     type: () => [PermissionTreeNodeDto],
     description: 'Raiz del arbol de permisos a sincronizar.',
   })
-  @IsArray({ message: 'Ex1034' })
-  @ArrayNotEmpty({ message: 'Ex1035' })
-  @ValidateNested({ each: true, message: 'Ex1027' })
+  @IsArray({ message: FoodaExceptionCodes.Ex1034.message })
+  @ArrayNotEmpty({ message: FoodaExceptionCodes.Ex1035.message })
+  @ValidateNested({ each: true, message: FoodaExceptionCodes.Ex1027.message })
   @Type(() => PermissionTreeNodeDto)
   permissions!: PermissionTreeNodeDto[];
 }

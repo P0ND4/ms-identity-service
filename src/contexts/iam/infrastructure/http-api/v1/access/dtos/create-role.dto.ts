@@ -7,22 +7,23 @@ import {
   IsString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
 
 export class CreateRoleDto {
   @ApiProperty({
     example: 'admin',
     description: 'Key unica del rol.',
   })
-  @IsString({ message: 'Ex1036' })
-  @IsNotEmpty({ message: 'Ex1037' })
+  @IsString({ message: FoodaExceptionCodes.Ex1036.message })
+  @IsNotEmpty({ message: FoodaExceptionCodes.Ex1037.message })
   key!: string;
 
   @ApiProperty({
     example: 'Administrador',
     description: 'Nombre visible del rol.',
   })
-  @IsString({ message: 'Ex1038' })
-  @IsNotEmpty({ message: 'Ex1039' })
+  @IsString({ message: FoodaExceptionCodes.Ex1038.message })
+  @IsNotEmpty({ message: FoodaExceptionCodes.Ex1039.message })
   name!: string;
 
   @ApiPropertyOptional({
@@ -30,7 +31,7 @@ export class CreateRoleDto {
     description: 'Descripcion opcional del rol.',
   })
   @IsOptional()
-  @IsString({ message: 'Ex1040' })
+  @IsString({ message: FoodaExceptionCodes.Ex1040.message })
   description?: string;
 
   @ApiPropertyOptional({
@@ -38,7 +39,7 @@ export class CreateRoleDto {
     description: 'Indica si es rol por defecto.',
   })
   @IsOptional()
-  @IsBoolean({ message: 'Ex1041' })
+  @IsBoolean({ message: FoodaExceptionCodes.Ex1041.message })
   isDefault?: boolean;
 
   @ApiPropertyOptional({
@@ -47,8 +48,8 @@ export class CreateRoleDto {
     description: 'permissionKeys iniciales del rol.',
   })
   @IsOptional()
-  @IsArray({ message: 'Ex1042' })
-  @ArrayUnique({ message: 'Ex1028' })
-  @IsString({ each: true, message: 'Ex1043' })
+  @IsArray({ message: FoodaExceptionCodes.Ex1042.message })
+  @ArrayUnique({ message: FoodaExceptionCodes.Ex1028.message })
+  @IsString({ each: true, message: FoodaExceptionCodes.Ex1043.message })
   permissionKeys?: string[];
 }
