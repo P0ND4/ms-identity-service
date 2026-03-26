@@ -1,0 +1,71 @@
+services:
+  identity-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: identity-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DB_SYNCHRONIZE: "false"
+      DB_LOGGING: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    networks:
+      - identity-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: identity-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_DATABASE:-identity_service}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-identity_service}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - identity-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: identity-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - identity-network
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  identity-network:
+    driver: bridge

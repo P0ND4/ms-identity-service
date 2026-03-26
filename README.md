@@ -25,6 +25,10 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Documentacion del proyecto
+
+- Guia operativa completa: `docs/OPERACION_PROYECTO.md`
+
 ## Project setup
 
 ```bash
