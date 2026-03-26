@@ -1,7 +1,7 @@
 // infrastructure/persistence/typeorm/repositories/role.repository.ts
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { TypeOrmRepository } from './base.repository';
 import { IRoleRepository } from '../../domain/repositories/role.repository.interface';
 import { Role } from '../../domain/entities/role.entity';
@@ -25,6 +25,11 @@ export class TypeOrmRoleRepository
     return await this.repository.findOne({ where: { key } });
   }
 
+  async findByKeys(keys: string[]): Promise<Role[]> {
+    if (keys.length === 0) return [];
+    return await this.repository.find({ where: { key: In(keys) } });
+  }
+
   async findDefaultRole(): Promise<Role | null> {
     return await this.repository.findOne({ where: { isDefault: true } });
   }
@@ -33,6 +38,13 @@ export class TypeOrmRoleRepository
     return await this.repository.findOne({
       where: { id },
       relations: ['rolePermissions', 'rolePermissions.permission'],
+    });
+  }
+
+  async findAllWithPermissions(): Promise<Role[]> {
+    return await this.repository.find({
+      relations: ['rolePermissions', 'rolePermissions.permission'],
+      order: { createdAt: 'ASC' },
     });
   }
 

@@ -150,4 +150,168 @@ export const FoodaExceptionCodes = {
     `${SERVICE_PREFIX}-1025`,
     'Slack token exchange esta deshabilitado',
   ),
+
+  Ex1026: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1026`,
+    'children contiene nodos de permisos invalidos',
+  ),
+
+  Ex1027: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1027`,
+    'permissions contiene nodos de permisos invalidos',
+  ),
+
+  Ex1028: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1028`,
+    'permissionKeys no puede contener valores duplicados',
+  ),
+
+  Ex1029: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1029`,
+    'roleKeys no puede contener valores duplicados',
+  ),
+
+  Ex1030: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1030`,
+    'El key del permiso tiene que ser un string',
+  ),
+
+  Ex1031: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1031`,
+    'El key del permiso no puede estar vacio',
+  ),
+
+  Ex1032: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1032`,
+    'La descripcion del permiso tiene que ser un string',
+  ),
+
+  Ex1033: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1033`,
+    'children del permiso tiene que ser un arreglo',
+  ),
+
+  Ex1034: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1034`,
+    'permissions tiene que ser un arreglo',
+  ),
+
+  Ex1035: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1035`,
+    'permissions no puede estar vacio',
+  ),
+
+  Ex1036: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1036`,
+    'El key del rol tiene que ser un string',
+  ),
+
+  Ex1037: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1037`,
+    'El key del rol no puede estar vacio',
+  ),
+
+  Ex1038: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1038`,
+    'El nombre del rol tiene que ser un string',
+  ),
+
+  Ex1039: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1039`,
+    'El nombre del rol no puede estar vacio',
+  ),
+
+  Ex1040: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1040`,
+    'La descripcion del rol tiene que ser un string',
+  ),
+
+  Ex1041: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1041`,
+    'isDefault tiene que ser boolean',
+  ),
+
+  Ex1042: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1042`,
+    'permissionKeys tiene que ser un arreglo',
+  ),
+
+  Ex1043: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1043`,
+    'Cada permissionKey tiene que ser un string',
+  ),
+
+  Ex1044: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1044`,
+    'permissionKeys no puede estar vacio',
+  ),
+
+  Ex1045: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1045`,
+    'firstName tiene que ser un string',
+  ),
+
+  Ex1046: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1046`,
+    'firstName no puede estar vacio',
+  ),
+
+  Ex1047: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1047`,
+    'lastName tiene que ser un string',
+  ),
+
+  Ex1048: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1048`,
+    'lastName no puede estar vacio',
+  ),
+
+  Ex1049: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1049`,
+    'status de colaborador invalido',
+  ),
+
+  Ex1050: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1050`,
+    'roleKeys tiene que ser un arreglo',
+  ),
+
+  Ex1051: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1051`,
+    'Cada roleKey tiene que ser un string',
+  ),
+
+  Ex1052: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1052`,
+    'roleKeys no puede estar vacio',
+  ),
+
+  Ex1053: new FoodaExceptionInfo(`${SERVICE_PREFIX}-1053`, 'El rol ya existe'),
+
+  Ex1054: new FoodaExceptionInfo(`${SERVICE_PREFIX}-1054`, 'Rol no encontrado'),
+
+  Ex1055: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1055`,
+    'Una o mas permissionKeys no existen',
+  ),
+
+  Ex1056: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1056`,
+    'Colaborador no encontrado',
+  ),
+
+  Ex1057: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1057`,
+    'El correo del colaborador ya existe',
+  ),
+
+  Ex1058: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1058`,
+    'x-collaborator-id es requerido',
+  ),
+
+  Ex1059: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1059`,
+    'Uno o mas roleKeys no existen',
+  ),
 };

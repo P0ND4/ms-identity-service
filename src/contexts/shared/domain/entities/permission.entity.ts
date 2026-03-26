@@ -4,6 +4,8 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
 } from 'typeorm';
 import { RolePermission } from './role-permission.entity';
@@ -25,9 +27,22 @@ export class Permission {
   @Column({ nullable: true })
   description!: string;
 
+  @Column({ name: 'parent_id', nullable: true })
+  parentId!: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 
   @OneToMany(() => RolePermission, (rp) => rp.permission)
   rolePermissions!: RolePermission[];
+
+  @ManyToOne(() => Permission, (permission) => permission.children, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'parent_id' })
+  parent!: Permission | null;
+
+  @OneToMany(() => Permission, (permission) => permission.parent)
+  children!: Permission[];
 }

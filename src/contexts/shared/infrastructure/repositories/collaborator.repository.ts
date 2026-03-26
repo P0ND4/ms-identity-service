@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { TypeOrmRepository } from './base.repository';
 import { Collaborator } from '../../domain/entities/collaborator.entity';
 import { ICollaboratorRepository } from '../../domain/repositories/collaborator.repository.interface';
+import { CollaboratorRole } from '../../domain/entities/collaborator-role.entity';
 
 @Injectable()
 export class TypeOrmCollaboratorRepository
@@ -13,6 +14,8 @@ export class TypeOrmCollaboratorRepository
   constructor(
     @InjectRepository(Collaborator)
     repository: Repository<Collaborator>,
+    @InjectRepository(CollaboratorRole)
+    private readonly collaboratorRoleRepository: Repository<CollaboratorRole>,
   ) {
     super(repository);
   }
@@ -56,8 +59,41 @@ export class TypeOrmCollaboratorRepository
     });
   }
 
+  async findAllWithRoles(): Promise<Collaborator[]> {
+    return await this.repository.find({
+      relations: [
+        'collaboratorRoles',
+        'collaboratorRoles.role',
+        'collaboratorRoles.role.rolePermissions',
+        'collaboratorRoles.role.rolePermissions.permission',
+      ],
+      order: { createdAt: 'ASC' },
+    });
+  }
+
   async updateLastLogin(id: string): Promise<void> {
     await this.repository.update(id, { lastLoginAt: new Date() });
+  }
+
+  async assignRoles(
+    collaboratorId: string,
+    roleIds: string[],
+    assignedBy?: string,
+  ): Promise<void> {
+    await this.repository.manager.transaction(async (manager) => {
+      await manager.delete(CollaboratorRole, { collaboratorId });
+
+      if (roleIds.length > 0) {
+        await manager.insert(
+          CollaboratorRole,
+          roleIds.map((roleId) => ({
+            collaboratorId,
+            roleId,
+            assignedBy,
+          })),
+        );
+      }
+    });
   }
 
   async existsByEmail(email: string): Promise<boolean> {
