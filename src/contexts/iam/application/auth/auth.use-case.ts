@@ -199,8 +199,22 @@ export class AuthService implements IAuthUseCase {
   }
 
   async logout(accessToken: string, refreshToken: string): Promise<void> {
-    const [id] = refreshToken.split('.');
-    if (id) await this.refreshTokenRepo.revoke(id);
+    if (!refreshToken) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1009,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const [id, tokenPlain] = refreshToken.split('.');
+    if (!id || !tokenPlain || !this.isUuid(id)) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1005,
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    await this.refreshTokenRepo.revoke(id);
 
     if (accessToken) {
       const token = accessToken.replace('Bearer ', '');
@@ -295,5 +309,11 @@ export class AuthService implements IAuthUseCase {
     const refreshTokenPlain = randomUUID();
     const refreshTokenHash = await this.hashingService.hash(refreshTokenPlain);
     return { refreshTokenPlain, refreshTokenHash };
+  }
+
+  private isUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    );
   }
 }

@@ -6,6 +6,7 @@ import { TypeOrmRepository } from './base.repository';
 import { IRoleRepository } from '../../domain/repositories/role.repository.interface';
 import { Role } from '../../domain/entities/role.entity';
 import { RolePermission } from '../../domain/entities/role-permission.entity';
+import { CollaboratorRole } from '../../domain/entities/collaborator-role.entity';
 
 @Injectable()
 export class TypeOrmRoleRepository
@@ -63,6 +64,60 @@ export class TypeOrmRoleRepository
         }));
         await manager.insert(RolePermission, entities);
       }
+    });
+  }
+
+  async bulkUpdateRoles(
+    updates: Array<{
+      id: string;
+      key?: string;
+      name?: string;
+      description?: string;
+      isDefault?: boolean;
+    }>,
+  ): Promise<void> {
+    await this.repository.manager.transaction(async (manager) => {
+      for (const update of updates) {
+        const updatePayload: Partial<Role> = {};
+        if (update.key !== undefined) updatePayload.key = update.key;
+        if (update.name !== undefined) updatePayload.name = update.name;
+        if (update.description !== undefined)
+          updatePayload.description = update.description;
+        if (update.isDefault !== undefined)
+          updatePayload.isDefault = update.isDefault;
+
+        if (Object.keys(updatePayload).length > 0) {
+          await manager.update(Role, { id: update.id }, updatePayload);
+        }
+      }
+    });
+  }
+
+  async bulkUpdateRolePermissions(
+    updates: Array<{ roleId: string; permissionIds: string[] }>,
+  ): Promise<void> {
+    await this.rolePermissionRepo.manager.transaction(async (manager) => {
+      for (const update of updates) {
+        await manager.delete(RolePermission, { roleId: update.roleId });
+
+        if (update.permissionIds.length > 0) {
+          await manager.insert(
+            RolePermission,
+            update.permissionIds.map((permissionId) => ({
+              roleId: update.roleId,
+              permissionId,
+            })),
+          );
+        }
+      }
+    });
+  }
+
+  async deleteRoleWithRelations(roleId: string): Promise<void> {
+    await this.repository.manager.transaction(async (manager) => {
+      await manager.delete(CollaboratorRole, { roleId });
+      await manager.delete(RolePermission, { roleId });
+      await manager.delete(Role, { id: roleId });
     });
   }
 }

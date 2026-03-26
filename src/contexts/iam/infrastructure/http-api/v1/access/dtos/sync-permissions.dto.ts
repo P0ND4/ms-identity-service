@@ -1,4 +1,5 @@
 import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayNotEmpty,
   IsArray,
@@ -7,28 +8,43 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
-import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
 
 export class PermissionTreeNodeDto {
-  @IsString({ message: FoodaExceptionCodes.Ex1030.message })
-  @IsNotEmpty({ message: FoodaExceptionCodes.Ex1031.message })
+  @ApiProperty({
+    example: 'users:manage',
+    description: 'Key unica del permiso.',
+  })
+  @IsString({ message: 'Ex1030' })
+  @IsNotEmpty({ message: 'Ex1031' })
   key!: string;
 
+  @ApiPropertyOptional({
+    example: 'Permite gestionar usuarios',
+    description: 'Descripcion opcional del permiso.',
+  })
   @IsOptional()
-  @IsString({ message: FoodaExceptionCodes.Ex1032.message })
+  @IsString({ message: 'Ex1032' })
   description?: string;
 
+  @ApiPropertyOptional({
+    type: () => [PermissionTreeNodeDto],
+    description: 'Permisos hijos para construir jerarquia.',
+  })
   @IsOptional()
-  @IsArray({ message: FoodaExceptionCodes.Ex1033.message })
-  @ValidateNested({ each: true, message: FoodaExceptionCodes.Ex1026.message })
+  @IsArray({ message: 'Ex1033' })
+  @ValidateNested({ each: true, message: 'Ex1026' })
   @Type(() => PermissionTreeNodeDto)
   children?: PermissionTreeNodeDto[];
 }
 
 export class SyncPermissionsDto {
-  @IsArray({ message: FoodaExceptionCodes.Ex1034.message })
-  @ArrayNotEmpty({ message: FoodaExceptionCodes.Ex1035.message })
-  @ValidateNested({ each: true, message: FoodaExceptionCodes.Ex1027.message })
+  @ApiProperty({
+    type: () => [PermissionTreeNodeDto],
+    description: 'Raiz del arbol de permisos a sincronizar.',
+  })
+  @IsArray({ message: 'Ex1034' })
+  @ArrayNotEmpty({ message: 'Ex1035' })
+  @ValidateNested({ each: true, message: 'Ex1027' })
   @Type(() => PermissionTreeNodeDto)
   permissions!: PermissionTreeNodeDto[];
 }

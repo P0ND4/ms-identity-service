@@ -14,15 +14,20 @@ async function bootstrap() {
   const nodeEnv = configService.get<string>('NODE_ENV') ?? 'development';
   const port = configService.get<number>('PORT') ?? 3000;
 
+  app.setGlobalPrefix(API);
+
   if (nodeEnv !== 'production') {
     const config = new DocumentBuilder()
       .setTitle('Identity Service')
       .setDescription('Microservice Identity Service')
       .setVersion('1.0')
-      .addTag('identity')
+      .addServer('/api')
       .build();
 
-    const documentFactory = () => SwaggerModule.createDocument(app, config);
+    const documentFactory = () =>
+      SwaggerModule.createDocument(app, config, {
+        ignoreGlobalPrefix: true,
+      });
     SwaggerModule.setup('api', app, documentFactory());
   }
 
@@ -47,7 +52,6 @@ async function bootstrap() {
   app.useGlobalPipes(new CustomValidationPipe());
   app.useGlobalFilters(new FoodaExceptionFilter());
   app.useGlobalInterceptors(new ApiResponseInterceptor());
-  app.setGlobalPrefix(API);
 
   await app.listen(port);
 }

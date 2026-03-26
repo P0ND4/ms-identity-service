@@ -35,10 +35,7 @@ import { RefreshTokenDto } from '../dtos/refresh-token.dto';
 import { LoginSlackTokenDto } from '../dtos/login-slack-token.dto';
 import { SlackOAuthGuard } from '../guards/slack-oauth.guard';
 import { FoodaException } from 'src/contexts/shared/domain/exceptions/fooda.exception';
-import {
-  FoodaExceptionCodes,
-  FoodaExceptionInfo,
-} from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
+import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
 
 type OAuthRequest = Request & { user: OAuthProfile };
 
@@ -65,7 +62,7 @@ export class AuthController {
 
   @Post('login/local')
   @ApiOperation({
-    summary: 'Iniciar sesion con correo y contrasena',
+    summary: 'Iniciar sesion con correo y contraseña',
     description: 'Autentica un colaborador usando credenciales locales.',
   })
   @ApiBody({ type: LoginLocalDto })
@@ -122,8 +119,10 @@ export class AuthController {
       this.configService.get<boolean>('ENABLE_GOOGLE_TOKEN_EXCHANGE') ?? true;
 
     if (!enabled) {
-      const exceptionInfo: FoodaExceptionInfo = FoodaExceptionCodes.Ex1023;
-      throw new FoodaException(exceptionInfo, HttpStatus.NOT_FOUND);
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1023,
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     return await this.authService.loginGoogleIdToken(body.idToken);
@@ -180,8 +179,10 @@ export class AuthController {
       true;
 
     if (!enabled) {
-      const exceptionInfo: FoodaExceptionInfo = FoodaExceptionCodes.Ex1024;
-      throw new FoodaException(exceptionInfo, HttpStatus.NOT_FOUND);
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1024,
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     return await this.authService.loginMicrosoftAccessToken(body.accessToken);
@@ -233,8 +234,10 @@ export class AuthController {
       this.configService.get<boolean>('ENABLE_SLACK_TOKEN_EXCHANGE') ?? true;
 
     if (!enabled) {
-      const exceptionInfo: FoodaExceptionInfo = FoodaExceptionCodes.Ex1025;
-      throw new FoodaException(exceptionInfo, HttpStatus.NOT_FOUND);
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1025,
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     return await this.authService.loginSlackAccessToken(body.accessToken);
@@ -271,13 +274,17 @@ export class AuthController {
       properties: {
         refreshToken: {
           type: 'string',
-          example: 'valor-del-refresh-token',
+          example:
+            '5f85e7b0-2f8c-4f66-90f6-2f84609f3f22.ae4b65a8-9ab4-4efb-a9d3',
         },
       },
       required: ['refreshToken'],
     },
   })
   @ApiOkResponse({ description: 'Logout exitoso.' })
+  @ApiUnauthorizedResponse({
+    description: 'El refresh token tiene formato invalido.',
+  })
   async logout(
     @Headers('authorization') accessToken: string,
     @Body('refreshToken') refreshToken: string,

@@ -2,9 +2,13 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import {
   IAccessUseCase,
   PermissionTreeNode,
+  PermissionSummary,
   PermissionTreeSummary,
   RoleSummary,
   SyncPermissionsResult,
+  UpdateRoleBulkItem,
+  UpdateRoleInput,
+  UpdateRolePermissionsBulkItem,
 } from 'src/contexts/iam/domain/use-cases/access-use-case.interface';
 import {
   IPermissionRepository,
@@ -14,6 +18,10 @@ import { IRoleRepository } from 'src/contexts/shared/domain/repositories/role.re
 import { FoodaException } from 'src/contexts/shared/domain/exceptions/fooda.exception';
 import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
 import { Role } from 'src/contexts/shared/domain/entities';
+import {
+  findDuplicateString,
+  isUuid,
+} from 'src/contexts/iam/application/helpers/validation.helper';
 
 @Injectable()
 export class AccessService implements IAccessUseCase {
@@ -32,6 +40,20 @@ export class AccessService implements IAccessUseCase {
       ...result,
       total: flattened.length,
     };
+  }
+
+  async getPermissions(): Promise<PermissionSummary[]> {
+    const permissions = await this.permissionRepository.findAll();
+    return permissions
+      .map((permission) => ({
+        id: permission.id,
+        key: permission.key,
+        resource: permission.resource,
+        action: permission.action,
+        description: permission.description,
+        parentId: permission.parentId,
+      }))
+      .sort((left, right) => left.key.localeCompare(right.key));
   }
 
   async getPermissionsTree(): Promise<PermissionTreeSummary[]> {
@@ -122,6 +144,13 @@ export class AccessService implements IAccessUseCase {
     roleId: string,
     permissionKeys: string[],
   ): Promise<RoleSummary> {
+    if (!isUuid(roleId)) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1060,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const role = await this.roleRepository.findById(roleId);
     if (!role) {
       throw new FoodaException(
@@ -143,6 +172,208 @@ export class AccessService implements IAccessUseCase {
     }
 
     return this.toRoleSummary(roleWithPermissions);
+  }
+
+  async updateRole(
+    roleId: string,
+    params: UpdateRoleInput,
+  ): Promise<RoleSummary> {
+    if (!isUuid(roleId)) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1060,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const role = await this.roleRepository.findById(roleId);
+    if (!role) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1054,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (params.key && params.key !== role.key) {
+      const existingByKey = await this.roleRepository.findByKey(params.key);
+      if (existingByKey && existingByKey.id !== roleId) {
+        throw new FoodaException(
+          FoodaExceptionCodes.Ex1053,
+          HttpStatus.CONFLICT,
+        );
+      }
+    }
+
+    const updatePayload: Partial<Role> = {};
+    if (params.key !== undefined) updatePayload.key = params.key;
+    if (params.name !== undefined) updatePayload.name = params.name;
+    if (params.description !== undefined)
+      updatePayload.description = params.description;
+    if (params.isDefault !== undefined)
+      updatePayload.isDefault = params.isDefault;
+
+    await this.roleRepository.update(roleId, updatePayload);
+
+    const roleWithPermissions =
+      await this.roleRepository.findWithPermissions(roleId);
+    if (!roleWithPermissions) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1054,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return this.toRoleSummary(roleWithPermissions);
+  }
+
+  async updateRoles(updates: UpdateRoleBulkItem[]): Promise<RoleSummary[]> {
+    const roleIds = updates.map((update) => update.id);
+    for (const roleId of roleIds) {
+      if (!isUuid(roleId)) {
+        throw new FoodaException(
+          FoodaExceptionCodes.Ex1060,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    const providedKeys = updates
+      .filter((update) => update.key !== undefined)
+      .map((update) => update.key as string);
+
+    const duplicatedKeyInPayload = findDuplicateString(providedKeys);
+    if (duplicatedKeyInPayload) {
+      throw new FoodaException(FoodaExceptionCodes.Ex1053, HttpStatus.CONFLICT);
+    }
+
+    for (const roleId of roleIds) {
+      const role = await this.roleRepository.findById(roleId);
+      if (!role) {
+        throw new FoodaException(
+          FoodaExceptionCodes.Ex1054,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+    }
+
+    for (const update of updates) {
+      if (!update.key) continue;
+      const existingByKey = await this.roleRepository.findByKey(update.key);
+      if (existingByKey && existingByKey.id !== update.id) {
+        throw new FoodaException(
+          FoodaExceptionCodes.Ex1053,
+          HttpStatus.CONFLICT,
+        );
+      }
+    }
+
+    await this.roleRepository.bulkUpdateRoles(updates);
+
+    const results: RoleSummary[] = [];
+    for (const roleId of roleIds) {
+      const roleWithPermissions =
+        await this.roleRepository.findWithPermissions(roleId);
+      if (!roleWithPermissions) {
+        throw new FoodaException(
+          FoodaExceptionCodes.Ex1054,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      results.push(this.toRoleSummary(roleWithPermissions));
+    }
+
+    return results;
+  }
+
+  async updateRolePermissionsBulk(
+    updates: UpdateRolePermissionsBulkItem[],
+  ): Promise<RoleSummary[]> {
+    const roleIds = updates.map((update) => update.roleId);
+    for (const roleId of roleIds) {
+      if (!isUuid(roleId)) {
+        throw new FoodaException(
+          FoodaExceptionCodes.Ex1060,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    for (const roleId of roleIds) {
+      const role = await this.roleRepository.findById(roleId);
+      if (!role) {
+        throw new FoodaException(
+          FoodaExceptionCodes.Ex1054,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+    }
+
+    const allPermissionKeys = [
+      ...new Set(updates.flatMap((u) => u.permissionKeys)),
+    ];
+
+    const permissions =
+      await this.permissionRepository.findByKeys(allPermissionKeys);
+    if (permissions.length !== allPermissionKeys.length) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1055,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const permissionByKey = new Map(
+      permissions.map((permission) => [permission.key, permission]),
+    );
+    const updatesWithPermissionIds = updates.map((update) => ({
+      roleId: update.roleId,
+      permissionIds: update.permissionKeys.map((permissionKey) => {
+        const permission = permissionByKey.get(permissionKey);
+        if (!permission) {
+          throw new FoodaException(
+            FoodaExceptionCodes.Ex1055,
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        return permission.id;
+      }),
+    }));
+
+    await this.roleRepository.bulkUpdateRolePermissions(
+      updatesWithPermissionIds,
+    );
+
+    const results: RoleSummary[] = [];
+    for (const roleId of roleIds) {
+      const roleWithPermissions =
+        await this.roleRepository.findWithPermissions(roleId);
+      if (!roleWithPermissions) {
+        throw new FoodaException(
+          FoodaExceptionCodes.Ex1054,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      results.push(this.toRoleSummary(roleWithPermissions));
+    }
+
+    return results;
+  }
+
+  async deleteRole(roleId: string): Promise<void> {
+    if (!isUuid(roleId)) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1060,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const role = await this.roleRepository.findById(roleId);
+    if (!role) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1054,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await this.roleRepository.deleteRoleWithRelations(roleId);
   }
 
   private flattenPermissions(

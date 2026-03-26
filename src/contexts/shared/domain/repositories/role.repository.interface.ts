@@ -11,4 +11,17 @@ export abstract class IRoleRepository extends IRepository<Role> {
     roleId: string,
     permissionIds: string[],
   ): Promise<void>;
+  abstract bulkUpdateRoles(
+    updates: Array<{
+      id: string;
+      key?: string;
+      name?: string;
+      description?: string;
+      isDefault?: boolean;
+    }>,
+  ): Promise<void>;
+  abstract bulkUpdateRolePermissions(
+    updates: Array<{ roleId: string; permissionIds: string[] }>,
+  ): Promise<void>;
+  abstract deleteRoleWithRelations(roleId: string): Promise<void>;
 }

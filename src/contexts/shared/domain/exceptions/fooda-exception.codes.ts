@@ -14,6 +14,11 @@ export const FoodaExceptionCodes = {
     `${SERVICE_PREFIX}-0000`,
     'Ha ocurrido un error desconocido en la solicitud.',
   ),
+  Ex0001: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-0001`,
+    'Ruta o recurso no encontrado',
+  ),
+
   // Errores Generales (9000+)
   Ex9999: new FoodaExceptionInfo(
     `${SERVICE_PREFIX}-9999`,
@@ -313,5 +318,115 @@ export const FoodaExceptionCodes = {
   Ex1059: new FoodaExceptionInfo(
     `${SERVICE_PREFIX}-1059`,
     'Uno o mas roleKeys no existen',
+  ),
+
+  Ex1060: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1060`,
+    'El identificador del rol debe ser un UUID valido',
+  ),
+
+  Ex1061: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1061`,
+    'El identificador del colaborador debe ser un UUID valido',
+  ),
+
+  Ex1068: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1068`,
+    'avatarUrl debe ser una URL valida',
+  ),
+
+  Ex1069: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1069`,
+    'collaborators tiene que ser un arreglo',
+  ),
+
+  Ex1070: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1070`,
+    'collaborators no puede estar vacio',
+  ),
+
+  Ex1071: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1071`,
+    'collaborators contiene elementos invalidos',
+  ),
+
+  Ex1072: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1072`,
+    'id de colaborador tiene que ser un string',
+  ),
+
+  Ex1073: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1073`,
+    'id de colaborador no puede estar vacio',
+  ),
+
+  Ex1074: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1074`,
+    'updates de colaboradores tiene que ser un arreglo',
+  ),
+
+  Ex1075: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1075`,
+    'updates de colaboradores no puede estar vacio',
+  ),
+
+  Ex1076: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1076`,
+    'updates de colaboradores contiene elementos invalidos',
+  ),
+
+  Ex1077: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1077`,
+    'id de rol tiene que ser un string',
+  ),
+
+  Ex1078: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1078`,
+    'id de rol no puede estar vacio',
+  ),
+
+  Ex1079: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1079`,
+    'updates de roles tiene que ser un arreglo',
+  ),
+
+  Ex1080: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1080`,
+    'updates de roles no puede estar vacio',
+  ),
+
+  Ex1081: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1081`,
+    'updates de roles contiene elementos invalidos',
+  ),
+
+  Ex1082: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1082`,
+    'updates de permisos por rol tiene que ser un arreglo',
+  ),
+
+  Ex1083: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1083`,
+    'updates de permisos por rol no puede estar vacio',
+  ),
+
+  Ex1084: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1084`,
+    'updates de permisos por rol contiene elementos invalidos',
+  ),
+
+  Ex1085: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1085`,
+    'updates de roles por colaborador tiene que ser un arreglo',
+  ),
+
+  Ex1086: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1086`,
+    'updates de roles por colaborador no puede estar vacio',
+  ),
+
+  Ex1087: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1087`,
+    'updates de roles por colaborador contiene elementos invalidos',
   ),
 };

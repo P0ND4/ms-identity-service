@@ -1,13 +1,11 @@
 import {
   BadRequestException,
   Injectable,
+  ValidationError,
   ValidationPipe,
 } from '@nestjs/common';
 import { FoodaException } from './fooda.exception';
-import {
-  FoodaExceptionCodes,
-  FoodaExceptionInfo,
-} from './fooda-exception.codes';
+import { FoodaExceptionCodes } from './fooda-exception.codes';
 
 @Injectable()
 export class CustomValidationPipe extends ValidationPipe {
@@ -16,52 +14,48 @@ export class CustomValidationPipe extends ValidationPipe {
       transform: true,
       whitelist: true,
       exceptionFactory: (errors) => {
-        let errorKey: string | undefined;
+        const collectConstraintMessages = (
+          validationErrors: ValidationError[],
+        ): string[] => {
+          const messages: string[] = [];
 
-        // Intenta encontrar la primera clave de error de validación (que debería ser nuestra clave 'ExXXXX')
-        if (errors.length > 0) {
-          const firstError = errors[0];
-          if (firstError.constraints) {
-            const constraintKeys = Object.keys(firstError.constraints);
-            if (constraintKeys.length > 0) {
-              errorKey = firstError.constraints[constraintKeys[0]]; // Esto debería ser 'ExXXXX'
+          for (const validationError of validationErrors) {
+            if (validationError.constraints) {
+              messages.push(...Object.values(validationError.constraints));
+            }
+
+            if (validationError.children?.length) {
+              messages.push(
+                ...collectConstraintMessages(validationError.children),
+              );
             }
           }
-          // Si no hay restricciones directas, verifica los hijos (para DTOs anidados, aunque no directamente aplicable aquí)
-          if (
-            !errorKey &&
-            firstError.children &&
-            firstError.children.length > 0
-          ) {
-            const childError = firstError.children[0];
-            if (childError.constraints) {
-              const childConstraintKeys = Object.keys(childError.constraints);
-              if (childConstraintKeys.length > 0) {
-                errorKey = childError.constraints[childConstraintKeys[0]];
-              }
-            }
-          }
+
+          return messages;
+        };
+
+        const firstValidationMessage = collectConstraintMessages(errors)[0];
+
+        if (!firstValidationMessage) {
+          return new BadRequestException();
         }
 
-        let errorInfo: FoodaExceptionInfo;
-
-        // Si encontramos una clave y existe en FoodaExceptionCodes, la usamos
-        if (
-          errorKey &&
-          FoodaExceptionCodes[errorKey as keyof typeof FoodaExceptionCodes]
-        ) {
-          // Es un DTO nuevo, lanzamos la excepción personalizada
-          errorInfo =
-            FoodaExceptionCodes[errorKey as keyof typeof FoodaExceptionCodes];
-          return new FoodaException(errorInfo, 400);
-        } else {
-          // Es un DTO antiguo o un error inesperado.
-          // Devolvemos la excepción estándar de NestJS para no romper otros módulos.
-          const originalMessages = errors.flatMap((error) =>
-            Object.values(error.constraints || {}),
-          );
-          return new BadRequestException(originalMessages);
+        const codeByMessage = Object.values(FoodaExceptionCodes).find(
+          (errorCode) => errorCode.message === firstValidationMessage,
+        );
+        if (codeByMessage) {
+          return new FoodaException(codeByMessage, 400);
         }
+
+        const codeByKey =
+          FoodaExceptionCodes[
+            firstValidationMessage as keyof typeof FoodaExceptionCodes
+          ];
+        if (codeByKey) {
+          return new FoodaException(codeByKey, 400);
+        }
+
+        return new BadRequestException([firstValidationMessage]);
       },
     });
   }
