@@ -1,28 +1,43 @@
 import { Injectable, HttpStatus } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { OAuth2Client } from 'google-auth-library';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'node:crypto';
 import {
   AuthResponse,
   IAuthUseCase,
+  OAuthProfile,
 } from '../../domain/use-cases/auth-use-case.interface';
 import { ICollaboratorRepository } from 'src/contexts/shared/domain/repositories/collaborator.repository.interface';
 import { IRefreshTokenRepository } from 'src/contexts/shared/domain/repositories/refresh-token.repository.interface';
 import { TokenBlacklistService } from 'src/contexts/shared/infrastructure/token-blacklist.service';
 import { RefreshToken } from 'src/contexts/shared/domain/entities/refresh-token.entity';
 import { IHashing } from 'src/contexts/shared/domain/interfaces/hashing.interface';
-import environment from 'src/config/environment.config';
 import { FoodaException } from 'src/contexts/shared/domain/exceptions/fooda.exception';
 import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
-import { CollaboratorRole } from 'src/contexts/shared/domain/entities';
+import {
+  Collaborator,
+  CollaboratorRole,
+  CollaboratorStatus,
+  OAuthProvider,
+} from 'src/contexts/shared/domain/entities';
+import { IOAuthAccountRepository } from 'src/contexts/shared/domain/repositories/oauth-account.repository.interface';
+import { verifyGoogleIdTokenAndBuildOAuthProfile } from './helpers/google-oauth.helper';
+import { fetchMicrosoftOAuthProfile } from './helpers/microsoft-oauth.helper';
+import { fetchSlackOAuthProfile } from './helpers/slack-oauth.helper';
 
 @Injectable()
 export class AuthService implements IAuthUseCase {
+  private readonly googleOAuthClient = new OAuth2Client();
+
   constructor(
     private readonly collaboratorRepo: ICollaboratorRepository,
+    private readonly oauthAccountRepo: IOAuthAccountRepository,
     private readonly refreshTokenRepo: IRefreshTokenRepository,
     private readonly hashingService: IHashing,
     private readonly jwtService: JwtService,
     private readonly blacklistService: TokenBlacklistService,
+    private readonly configService: ConfigService,
   ) {}
 
   async loginLocal(email: string, password: string): Promise<AuthResponse> {
@@ -50,6 +65,85 @@ export class AuthService implements IAuthUseCase {
     await this.collaboratorRepo.updateLastLogin(user.id);
 
     return this.generateAuthResponse(user);
+  }
+
+  async loginOAuth(profile: OAuthProfile): Promise<AuthResponse> {
+    if (!profile.email || !profile.providerAccountId) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1003,
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const oauthProvider = profile.provider as OAuthProvider;
+    const existingOauthAccount =
+      await this.oauthAccountRepo.findByProviderAccount(
+        oauthProvider,
+        profile.providerAccountId,
+      );
+
+    const collaborator = await this.resolveCollaboratorFromOAuth(profile);
+
+    if (existingOauthAccount) {
+      await this.oauthAccountRepo.update(existingOauthAccount.id, {
+        accessToken: profile.accessToken,
+        refreshToken: profile.refreshToken,
+        metadata: profile.metadata,
+      });
+    } else {
+      await this.oauthAccountRepo.save({
+        provider: oauthProvider,
+        providerAccountId: profile.providerAccountId,
+        collaboratorId: collaborator.id,
+        accessToken: profile.accessToken,
+        refreshToken: profile.refreshToken,
+        metadata: profile.metadata,
+      });
+    }
+
+    const collaboratorWithRoles = await this.collaboratorRepo.findByIdWithRoles(
+      collaborator.id,
+    );
+    if (!collaboratorWithRoles) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1008,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await this.collaboratorRepo.updateLastLogin(collaboratorWithRoles.id);
+    return this.generateAuthResponse(collaboratorWithRoles);
+  }
+
+  async loginGoogleIdToken(idToken: string): Promise<AuthResponse> {
+    const audience =
+      this.configService.get<string>('GOOGLE_ONE_TAP_CLIENT_ID') ??
+      this.configService.get<string>('GOOGLE_CLIENT_ID');
+
+    if (!audience) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1012,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const profile = await verifyGoogleIdTokenAndBuildOAuthProfile({
+      idToken,
+      audience,
+      googleOAuthClient: this.googleOAuthClient,
+    });
+
+    return await this.loginOAuth(profile);
+  }
+
+  async loginMicrosoftAccessToken(accessToken: string): Promise<AuthResponse> {
+    const profile = await fetchMicrosoftOAuthProfile(accessToken);
+    return await this.loginOAuth(profile);
+  }
+
+  async loginSlackAccessToken(accessToken: string): Promise<AuthResponse> {
+    const profile = await fetchSlackOAuthProfile(accessToken);
+    return await this.loginOAuth(profile);
   }
 
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
@@ -94,6 +188,13 @@ export class AuthService implements IAuthUseCase {
       user.email,
     );
 
+    if (!userWithRoles) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1008,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
     return this.generateAuthResponse(userWithRoles);
   }
 
@@ -111,8 +212,10 @@ export class AuthService implements IAuthUseCase {
     await this.refreshTokenRepo.revokeAllByUser(userId);
   }
 
-  private async generateAuthResponse(user: any): Promise<AuthResponse> {
-    const roles = user.collaboratorRoles.map(
+  private async generateAuthResponse(
+    user: Collaborator,
+  ): Promise<AuthResponse> {
+    const roles = (user.collaboratorRoles ?? []).map(
       (cr: CollaboratorRole) => cr.role.key,
     );
 
@@ -126,12 +229,15 @@ export class AuthService implements IAuthUseCase {
     const { refreshTokenPlain, refreshTokenHash } =
       await this.generateRefreshToken();
 
-    const env = await environment();
+    const refreshTokenTtlSeconds =
+      this.configService.get<number>('REFRESH_TOKEN_TTL_SECONDS') ?? 604800;
+    const jwtExpiresInSeconds =
+      this.configService.get<number>('JWT_EXPIRES_IN_SECONDS') ?? 3600;
 
     const refreshTokenEntity = await this.refreshTokenRepo.save({
       collaboratorId: user.id,
       tokenHash: refreshTokenHash,
-      expiresAt: new Date(Date.now() + env.REFRESH_TOKEN_TTL_SECONDS * 1000),
+      expiresAt: new Date(Date.now() + refreshTokenTtlSeconds * 1000),
     } as Partial<RefreshToken>);
 
     const refreshToken = `${refreshTokenEntity.id}.${refreshTokenPlain}`;
@@ -139,7 +245,7 @@ export class AuthService implements IAuthUseCase {
     return {
       accessToken,
       refreshToken,
-      expiresIn: env.JWT_EXPIRES_IN_SECONDS,
+      expiresIn: jwtExpiresInSeconds,
       user: {
         id: user.id,
         email: user.email,
@@ -148,6 +254,38 @@ export class AuthService implements IAuthUseCase {
         roles: roles,
       },
     };
+  }
+
+  private async resolveCollaboratorFromOAuth(
+    profile: OAuthProfile,
+  ): Promise<Collaborator> {
+    const existingOauthAccount =
+      await this.oauthAccountRepo.findByProviderAccount(
+        profile.provider as OAuthProvider,
+        profile.providerAccountId,
+      );
+
+    if (existingOauthAccount) {
+      const collaborator = await this.collaboratorRepo.findByIdWithRoles(
+        existingOauthAccount.collaboratorId,
+      );
+      if (collaborator) return collaborator;
+    }
+
+    const collaboratorByEmail =
+      await this.collaboratorRepo.findByEmailWithRoles(profile.email);
+    if (collaboratorByEmail) return collaboratorByEmail;
+
+    const createdCollaborator = await this.collaboratorRepo.save({
+      email: profile.email,
+      firstName: profile.firstName || 'OAuth',
+      lastName: profile.lastName || 'User',
+      avatarUrl: profile.avatarUrl,
+      emailVerified: true,
+      status: CollaboratorStatus.ACTIVE,
+    });
+
+    return createdCollaborator;
   }
 
   private async generateRefreshToken(): Promise<{

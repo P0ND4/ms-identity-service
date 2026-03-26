@@ -5,13 +5,16 @@ import { CustomValidationPipe } from './contexts/shared/domain/exceptions/custom
 import { FoodaExceptionFilter } from './contexts/shared/domain/exceptions/fooda-exception.filter';
 import { ApiResponseInterceptor } from './contexts/shared/interceptors/api.response.interceptor';
 import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import environment from './config/environment.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+  const nodeEnv = configService.get<string>('NODE_ENV') ?? 'development';
+  const port = configService.get<number>('PORT') ?? 3000;
 
-  if ((await environment()).NODE_ENV !== 'production') {
+  if (nodeEnv !== 'production') {
     const config = new DocumentBuilder()
       .setTitle('Identity Service')
       .setDescription('Microservice Identity Service')
@@ -46,7 +49,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new ApiResponseInterceptor());
   app.setGlobalPrefix(API);
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(port);
 }
 bootstrap().catch((err) => {
   console.log(err);

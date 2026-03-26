@@ -44,6 +44,18 @@ export class TypeOrmCollaboratorRepository
     });
   }
 
+  async findByIdWithRoles(id: string): Promise<Collaborator | null> {
+    return await this.repository.findOne({
+      where: { id },
+      relations: [
+        'collaboratorRoles',
+        'collaboratorRoles.role',
+        'collaboratorRoles.role.rolePermissions',
+        'collaboratorRoles.role.rolePermissions.permission',
+      ],
+    });
+  }
+
   async updateLastLogin(id: string): Promise<void> {
     await this.repository.update(id, { lastLoginAt: new Date() });
   }

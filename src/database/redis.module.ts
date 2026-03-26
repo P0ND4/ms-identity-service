@@ -1,15 +1,16 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
-import environment from 'src/config/environment.config';
 
-const createRedisClient = async (clientName: string): Promise<Redis> => {
-  const env = await environment();
-
-  const host = env.REDIS_HOST;
-  const port = env.REDIS_PORT;
-  const password = env.REDIS_PASSWORD;
-  const username = env.REDIS_USERNAME;
-  const redisUrl = env.REDIS_URL;
+const createRedisClient = (
+  clientName: string,
+  configService: ConfigService,
+): Redis => {
+  const host = configService.get<string>('REDIS_HOST') ?? 'localhost';
+  const port = configService.get<number>('REDIS_PORT') ?? 6379;
+  const password = configService.get<string>('REDIS_PASSWORD');
+  const username = configService.get<string>('REDIS_USERNAME');
+  const redisUrl = configService.get<string>('REDIS_URL');
 
   const client = redisUrl
     ? new Redis(redisUrl, { maxRetriesPerRequest: 3, lazyConnect: false })
@@ -38,7 +39,9 @@ const createRedisClient = async (clientName: string): Promise<Redis> => {
   providers: [
     {
       provide: 'TOKEN_BLACKLIST',
-      useFactory: async () => await createRedisClient('Token Blacklist'),
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) =>
+        createRedisClient('Token Blacklist', configService),
     },
   ],
   exports: ['TOKEN_BLACKLIST'],

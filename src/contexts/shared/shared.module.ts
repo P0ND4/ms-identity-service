@@ -11,6 +11,7 @@ import {
 } from './domain/entities';
 import {
   TypeOrmCollaboratorRepository,
+  TypeOrmOAuthAccountRepository,
   TypeOrmPermissionRepository,
   TypeOrmRefreshTokenRepository,
   TypeOrmRoleRepository,
@@ -18,6 +19,7 @@ import {
 
 import {
   ICollaboratorRepository,
+  IOAuthAccountRepository,
   IRefreshTokenRepository,
   IRoleRepository,
   IPermissionRepository,
@@ -31,6 +33,10 @@ const REPOSITORY_PROVIDERS = [
   {
     provide: IRefreshTokenRepository,
     useClass: TypeOrmRefreshTokenRepository,
+  },
+  {
+    provide: IOAuthAccountRepository,
+    useClass: TypeOrmOAuthAccountRepository,
   },
   {
     provide: IRoleRepository,
