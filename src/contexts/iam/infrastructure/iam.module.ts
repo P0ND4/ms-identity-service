@@ -6,4 +6,4 @@ import { AccessModule } from './http-api/v1/access/access.module';
 @Module({
   imports: [AuthModule, CollaboratorsModule, AccessModule],
 })
-export class IamModule {}
+export class IamContextModule {}
