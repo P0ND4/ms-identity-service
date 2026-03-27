@@ -1,6 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
 import { OAuth2Client } from 'google-auth-library';
-import { OAuthProfile } from 'src/contexts/iam/domain/use-cases/auth-use-case.interface';
+import { OAuthProfile } from 'src/contexts/iam/domain/use-cases/auth/auth-use-case.interface';
 import { FoodaException } from 'src/contexts/shared/domain/exceptions/fooda.exception';
 import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
 

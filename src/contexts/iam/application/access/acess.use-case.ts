@@ -9,7 +9,7 @@ import {
   UpdateRoleBulkItem,
   UpdateRoleInput,
   UpdateRolePermissionsBulkItem,
-} from 'src/contexts/iam/domain/use-cases/access-use-case.interface';
+} from 'src/contexts/iam/domain/use-cases/access/access-use-case.interface';
 import {
   IPermissionRepository,
   PermissionSyncInput,

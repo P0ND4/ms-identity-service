@@ -4,7 +4,7 @@ import {
   PermissionTreeSummary,
   RoleSummary,
   SyncPermissionsResult,
-} from 'src/contexts/iam/domain/use-cases/access-use-case.interface';
+} from 'src/contexts/iam/domain/use-cases/access/access-use-case.interface';
 import { AccessController } from 'src/contexts/iam/infrastructure/http-api/v1/access/controllers/access.controller';
 
 describe('AccessController', () => {

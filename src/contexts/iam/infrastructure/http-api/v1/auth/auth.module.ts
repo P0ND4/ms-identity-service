@@ -4,7 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './controllers/auth.controller';
 import { AuthService } from 'src/contexts/iam/application/auth/auth.use-case';
-import { IAuthUseCase } from 'src/contexts/iam/domain/use-cases/auth-use-case.interface';
+import { IAuthUseCase } from 'src/contexts/iam/domain/use-cases/auth/auth-use-case.interface';
 import { BcryptService } from 'src/contexts/shared/infrastructure/hashing/bcrypt.service';
 import { TokenBlacklistService } from 'src/contexts/shared/infrastructure/token-blacklist.service';
 import { RedisModule } from 'src/database/redis.module';

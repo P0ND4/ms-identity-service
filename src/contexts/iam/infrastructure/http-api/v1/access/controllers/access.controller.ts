@@ -18,7 +18,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { V1_IAM } from '../../../route.constants';
-import { IAccessUseCase } from 'src/contexts/iam/domain/use-cases/access-use-case.interface';
+import { IAccessUseCase } from 'src/contexts/iam/domain/use-cases/access/access-use-case.interface';
 import { SyncPermissionsDto } from '../dtos/sync-permissions.dto';
 import { CreateRoleDto } from '../dtos/create-role.dto';
 import { UpdateRolePermissionsDto } from '../dtos/update-role-permissions.dto';

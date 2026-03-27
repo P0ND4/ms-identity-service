@@ -1,7 +1,7 @@
 import {
   CollaboratorSummary,
   ICollaboratorsUseCase,
-} from 'src/contexts/iam/domain/use-cases/collaborators-use-case.interface';
+} from 'src/contexts/iam/domain/use-cases/collaborators/collaborators-use-case.interface';
 import { CollaboratorStatus } from 'src/contexts/shared/domain/entities';
 import { CollaboratorsController } from 'src/contexts/iam/infrastructure/http-api/v1/collaborators/controllers/collaborators.controller';
 

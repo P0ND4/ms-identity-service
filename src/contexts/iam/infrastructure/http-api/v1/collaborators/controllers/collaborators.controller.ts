@@ -20,7 +20,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { V1_IAM } from '../../../route.constants';
-import { ICollaboratorsUseCase } from 'src/contexts/iam/domain/use-cases/collaborators-use-case.interface';
+import { ICollaboratorsUseCase } from 'src/contexts/iam/domain/use-cases/collaborators/collaborators-use-case.interface';
 import { CreateCollaboratorDto } from '../dtos/create-collaborator.dto';
 import { UpdateCollaboratorRolesDto } from '../dtos/update-collaborator-roles.dto';
 import { UpdateCollaboratorStatusDto } from '../dtos/update-collaborator-status.dto';

@@ -26,7 +26,7 @@ import {
   AuthResponse,
   IAuthUseCase,
   OAuthProfile,
-} from 'src/contexts/iam/domain/use-cases/auth-use-case.interface';
+} from 'src/contexts/iam/domain/use-cases/auth/auth-use-case.interface';
 import { GoogleOAuthGuard } from '../guards/google-oauth.guard';
 import { LoginGoogleTokenDto } from '../dtos/login-google-token.dto';
 import { LoginMicrosoftTokenDto } from '../dtos/login-microsoft-token.dto';

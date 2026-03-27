@@ -7,7 +7,7 @@ import {
   AuthResponse,
   IAuthUseCase,
   OAuthProfile,
-} from '../../domain/use-cases/auth-use-case.interface';
+} from '../../domain/use-cases/auth/auth-use-case.interface';
 import { ICollaboratorRepository } from 'src/contexts/shared/domain/repositories/collaborator.repository.interface';
 import { IRefreshTokenRepository } from 'src/contexts/shared/domain/repositories/refresh-token.repository.interface';
 import { TokenBlacklistService } from 'src/contexts/shared/infrastructure/token-blacklist.service';

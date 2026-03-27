@@ -5,7 +5,7 @@ import {
   CollaboratorSummary,
   CollaboratorUpdateInput,
   ICollaboratorsUseCase,
-} from 'src/contexts/iam/domain/use-cases/collaborators-use-case.interface';
+} from 'src/contexts/iam/domain/use-cases/collaborators/collaborators-use-case.interface';
 import {
   Collaborator,
   CollaboratorRole,

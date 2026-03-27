@@ -4,7 +4,7 @@ import {
   AuthResponse,
   IAuthUseCase,
   OAuthProfile,
-} from 'src/contexts/iam/domain/use-cases/auth-use-case.interface';
+} from 'src/contexts/iam/domain/use-cases/auth/auth-use-case.interface';
 import { FoodaException } from 'src/contexts/shared/domain/exceptions/fooda.exception';
 import { AuthController } from 'src/contexts/iam/infrastructure/http-api/v1/auth/controllers/auth.controller';
 
