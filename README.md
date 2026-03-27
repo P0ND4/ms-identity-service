@@ -8,6 +8,11 @@ Servicio de identidad y acceso para autenticacion, autorizacion y gestion de col
 - Gestion de colaboradores, roles y permisos.
 - Revocacion y blacklist de tokens en Redis.
 
+## Endpoints
+<img width="1468" height="715" alt="image" src="https://github.com/user-attachments/assets/a398075b-ed39-4520-aa9c-5c90afb75910" />
+<img width="1447" height="600" alt="image" src="https://github.com/user-attachments/assets/65ee287b-7cbf-4017-aeac-826f83b39f78" />
+<img width="1451" height="606" alt="image" src="https://github.com/user-attachments/assets/513a675e-d354-4f99-b520-c5d1af19dc94" />
+
 ## Stack
 - NestJS
 - TypeORM
