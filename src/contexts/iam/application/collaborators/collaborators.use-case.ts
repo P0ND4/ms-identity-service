@@ -11,8 +11,8 @@ import {
   CollaboratorRole,
   CollaboratorStatus,
 } from 'src/contexts/shared/domain/entities';
-import { FoodaException } from 'src/contexts/shared/domain/exceptions/fooda.exception';
-import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
+import { FoodaException } from 'src/contexts/shared/domain/exceptions/identity.exception';
+import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/identity-exception.codes';
 import { IHashing } from 'src/contexts/shared/domain/interfaces/hashing.interface';
 import { ICollaboratorRepository } from 'src/contexts/shared/domain/repositories/collaborator.repository.interface';
 import { IRoleRepository } from 'src/contexts/shared/domain/repositories/role.repository.interface';

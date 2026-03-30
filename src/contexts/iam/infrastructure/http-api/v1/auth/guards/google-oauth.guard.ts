@@ -1,8 +1,8 @@
 import { ExecutionContext, HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
-import { FoodaException } from 'src/contexts/shared/domain/exceptions/fooda.exception';
-import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
+import { FoodaException } from 'src/contexts/shared/domain/exceptions/identity.exception';
+import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/identity-exception.codes';
 
 @Injectable()
 export class GoogleOAuthGuard extends AuthGuard('google') {

@@ -15,8 +15,8 @@ import {
   PermissionSyncInput,
 } from 'src/contexts/shared/domain/repositories/permission.repository.interface';
 import { IRoleRepository } from 'src/contexts/shared/domain/repositories/role.repository.interface';
-import { FoodaException } from 'src/contexts/shared/domain/exceptions/fooda.exception';
-import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
+import { FoodaException } from 'src/contexts/shared/domain/exceptions/identity.exception';
+import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/identity-exception.codes';
 import { Role } from 'src/contexts/shared/domain/entities';
 import {
   findDuplicateString,

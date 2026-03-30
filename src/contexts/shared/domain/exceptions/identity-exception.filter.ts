@@ -7,8 +7,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { FoodaException } from './fooda.exception';
-import { FoodaExceptionCodes } from './fooda-exception.codes';
+import { FoodaException } from './identity.exception';
+import { FoodaExceptionCodes } from './identity-exception.codes';
 
 @Catch()
 export class FoodaExceptionFilter implements ExceptionFilter {

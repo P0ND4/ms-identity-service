@@ -4,8 +4,8 @@ import {
   ValidationError,
   ValidationPipe,
 } from '@nestjs/common';
-import { FoodaException } from './fooda.exception';
-import { FoodaExceptionCodes } from './fooda-exception.codes';
+import { FoodaException } from './identity.exception';
+import { FoodaExceptionCodes } from './identity-exception.codes';
 
 @Injectable()
 export class CustomValidationPipe extends ValidationPipe {

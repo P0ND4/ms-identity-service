@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CollaboratorStatus } from 'src/contexts/shared/domain/entities';
-import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
+import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/identity-exception.codes';
 
 export class CreateCollaboratorDto {
   @ApiProperty({

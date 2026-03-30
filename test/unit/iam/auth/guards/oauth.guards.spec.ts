@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { GoogleOAuthGuard } from 'src/contexts/iam/infrastructure/http-api/v1/auth/guards/google-oauth.guard';
 import { MicrosoftOAuthGuard } from 'src/contexts/iam/infrastructure/http-api/v1/auth/guards/microsoft-oauth.guard';
 import { SlackOAuthGuard } from 'src/contexts/iam/infrastructure/http-api/v1/auth/guards/slack-oauth.guard';
-import { FoodaException } from 'src/contexts/shared/domain/exceptions/fooda.exception';
+import { FoodaException } from 'src/contexts/shared/domain/exceptions/identity.exception';
 
 describe('OAuth Guards', () => {
   const context = {} as ExecutionContext;

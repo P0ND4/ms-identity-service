@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { UpdateRoleDto } from './update-role.dto';
-import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
+import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/identity-exception.codes';
 
 export class UpdateRoleBulkItemDto extends UpdateRoleDto {
   @ApiProperty({

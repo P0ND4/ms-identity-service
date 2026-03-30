@@ -13,8 +13,8 @@ import { IRefreshTokenRepository } from 'src/contexts/shared/domain/repositories
 import { TokenBlacklistService } from 'src/contexts/shared/infrastructure/token-blacklist.service';
 import { RefreshToken } from 'src/contexts/shared/domain/entities/refresh-token.entity';
 import { IHashing } from 'src/contexts/shared/domain/interfaces/hashing.interface';
-import { FoodaException } from 'src/contexts/shared/domain/exceptions/fooda.exception';
-import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
+import { FoodaException } from 'src/contexts/shared/domain/exceptions/identity.exception';
+import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/identity-exception.codes';
 import {
   Collaborator,
   CollaboratorRole,

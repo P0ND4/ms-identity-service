@@ -1,7 +1,7 @@
 import { IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { CollaboratorStatus } from 'src/contexts/shared/domain/entities';
-import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
+import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/identity-exception.codes';
 
 export class UpdateCollaboratorStatusDto {
   @ApiProperty({

@@ -2,7 +2,7 @@ import { Type } from 'class-transformer';
 import { ArrayNotEmpty, IsArray, ValidateNested } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { CreateCollaboratorDto } from './create-collaborator.dto';
-import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
+import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/identity-exception.codes';
 
 export class CreateCollaboratorsDto {
   @ApiProperty({

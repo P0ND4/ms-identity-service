@@ -1,7 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
 import { OAuthProfile } from 'src/contexts/iam/domain/use-cases/auth/auth-use-case.interface';
-import { FoodaException } from 'src/contexts/shared/domain/exceptions/fooda.exception';
-import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
+import { FoodaException } from 'src/contexts/shared/domain/exceptions/identity.exception';
+import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/identity-exception.codes';
 
 type MicrosoftProfileResponse = {
   id?: string;

@@ -34,8 +34,8 @@ import { MicrosoftOAuthGuard } from '../guards/microsoft-oauth.guard';
 import { RefreshTokenDto } from '../dtos/refresh-token.dto';
 import { LoginSlackTokenDto } from '../dtos/login-slack-token.dto';
 import { SlackOAuthGuard } from '../guards/slack-oauth.guard';
-import { FoodaException } from 'src/contexts/shared/domain/exceptions/fooda.exception';
-import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/fooda-exception.codes';
+import { FoodaException } from 'src/contexts/shared/domain/exceptions/identity.exception';
+import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/identity-exception.codes';
 
 type OAuthRequest = Request & { user: OAuthProfile };
 
