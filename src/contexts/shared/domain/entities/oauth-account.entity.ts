@@ -15,6 +15,8 @@ export enum OAuthProvider {
   GOOGLE = 'google',
   MICROSOFT = 'microsoft',
   SLACK = 'slack',
+  GITHUB = 'github',
+  APPLE = 'apple',
 }
 
 @Entity('oauth_accounts')

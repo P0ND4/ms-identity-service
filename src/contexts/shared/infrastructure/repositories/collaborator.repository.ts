@@ -1,13 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { TypeOrmRepository } from './base.repository';
-import {
-  Collaborator,
-  CollaboratorRole,
-  CollaboratorStatus,
-} from '../../domain/entities';
+import { Collaborator } from '../../domain/entities';
 import { ICollaboratorRepository } from '../../domain/repositories/collaborator.repository.interface';
+import { TenantContext } from '../tenant/tenant-context.service';
 
 @Injectable()
 export class TypeOrmCollaboratorRepository
@@ -17,77 +14,88 @@ export class TypeOrmCollaboratorRepository
   constructor(
     @InjectRepository(Collaborator)
     repository: Repository<Collaborator>,
+    private readonly tenantContext: TenantContext,
   ) {
     super(repository);
   }
 
+  private tableName(table: string): string {
+    return `${this.tenantContext.schemaQuoted}.${table}`;
+  }
+
   async findByEmail(email: string): Promise<Collaborator | null> {
-    return await this.repository.findOne({
-      where: { email },
-      select: [
-        'id',
-        'email',
-        'passwordHash',
-        'firstName',
-        'lastName',
-        'status',
-        'createdAt',
-      ],
-    });
+    return (await this.repository
+      .createQueryBuilder('c')
+      .from(this.tableName('collaborators'), 'c')
+      .select([
+        'c.id',
+        'c.email',
+        'c.password_hash as "passwordHash"',
+        'c.first_name as "firstName"',
+        'c.last_name as "lastName"',
+        'c.status',
+        'c.created_at as "createdAt"',
+      ])
+      .where('c.email = :email', { email })
+      .getRawOne()) as unknown as Collaborator | null;
   }
 
   async findByEmails(emails: string[]): Promise<Collaborator[]> {
     if (emails.length === 0) return [];
-    return await this.repository.find({ where: { email: In(emails) } });
+    return (await this.repository
+      .createQueryBuilder('c')
+      .from(this.tableName('collaborators'), 'c')
+      .where('c.email IN (:...emails)', { emails })
+      .getRawMany()) as unknown as Collaborator[];
   }
 
   async findByIdsWithRoles(ids: string[]): Promise<Collaborator[]> {
     if (ids.length === 0) return [];
-    return await this.repository.find({
-      where: { id: In(ids) },
-      relations: [
-        'collaboratorRoles',
-        'collaboratorRoles.role',
-        'collaboratorRoles.role.rolePermissions',
-        'collaboratorRoles.role.rolePermissions.permission',
-      ],
-    });
+    return (await this.repository
+      .createQueryBuilder('c')
+      .from(this.tableName('collaborators'), 'c')
+      .leftJoinAndSelect('c.collaboratorRoles', 'cr')
+      .leftJoinAndSelect('cr.role', 'r')
+      .leftJoinAndSelect('r.rolePermissions', 'rp')
+      .leftJoinAndSelect('rp.permission', 'p')
+      .where('c.id IN (:...ids)', { ids })
+      .getMany()) as unknown as Collaborator[];
   }
 
   async findByEmailWithRoles(email: string): Promise<Collaborator | null> {
-    return await this.repository.findOne({
-      where: { email },
-      relations: [
-        'collaboratorRoles',
-        'collaboratorRoles.role',
-        'collaboratorRoles.role.rolePermissions',
-        'collaboratorRoles.role.rolePermissions.permission',
-      ],
-    });
+    return (await this.repository
+      .createQueryBuilder('c')
+      .from(this.tableName('collaborators'), 'c')
+      .leftJoinAndSelect('c.collaboratorRoles', 'cr')
+      .leftJoinAndSelect('cr.role', 'r')
+      .leftJoinAndSelect('r.rolePermissions', 'rp')
+      .leftJoinAndSelect('rp.permission', 'p')
+      .where('c.email = :email', { email })
+      .getOne()) as unknown as Collaborator | null;
   }
 
   async findByIdWithRoles(id: string): Promise<Collaborator | null> {
-    return await this.repository.findOne({
-      where: { id },
-      relations: [
-        'collaboratorRoles',
-        'collaboratorRoles.role',
-        'collaboratorRoles.role.rolePermissions',
-        'collaboratorRoles.role.rolePermissions.permission',
-      ],
-    });
+    return (await this.repository
+      .createQueryBuilder('c')
+      .from(this.tableName('collaborators'), 'c')
+      .leftJoinAndSelect('c.collaboratorRoles', 'cr')
+      .leftJoinAndSelect('cr.role', 'r')
+      .leftJoinAndSelect('r.rolePermissions', 'rp')
+      .leftJoinAndSelect('rp.permission', 'p')
+      .where('c.id = :id', { id })
+      .getOne()) as unknown as Collaborator | null;
   }
 
   async findAllWithRoles(): Promise<Collaborator[]> {
-    return await this.repository.find({
-      relations: [
-        'collaboratorRoles',
-        'collaboratorRoles.role',
-        'collaboratorRoles.role.rolePermissions',
-        'collaboratorRoles.role.rolePermissions.permission',
-      ],
-      order: { createdAt: 'ASC' },
-    });
+    return (await this.repository
+      .createQueryBuilder('c')
+      .from(this.tableName('collaborators'), 'c')
+      .leftJoinAndSelect('c.collaboratorRoles', 'cr')
+      .leftJoinAndSelect('cr.role', 'r')
+      .leftJoinAndSelect('r.rolePermissions', 'rp')
+      .leftJoinAndSelect('rp.permission', 'p')
+      .orderBy('c.created_at', 'ASC')
+      .getMany()) as unknown as Collaborator[];
   }
 
   async bulkCreateWithRoles(params: {
@@ -104,31 +112,39 @@ export class TypeOrmCollaboratorRepository
   }): Promise<string[]> {
     return await this.repository.manager.transaction(async (manager) => {
       const createdIds: string[] = [];
+      const collaboratorTable = this.tableName('collaborators');
+      const collaboratorRoleTable = this.tableName('collaborator_roles');
 
       for (const collaborator of params.collaborators) {
-        const created = await manager.save(
-          manager.create(Collaborator, {
-            email: collaborator.email,
-            firstName: collaborator.firstName,
-            lastName: collaborator.lastName,
-            passwordHash: collaborator.passwordHash,
-            emailVerified: collaborator.emailVerified,
-            status: collaborator.status as CollaboratorStatus,
-          }),
+        const result = await manager.query(
+          `INSERT INTO ${collaboratorTable} 
+           (id, email, password_hash, first_name, last_name, email_verified, status, created_at, updated_at)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, NOW(), NOW())
+           RETURNING id`,
+          [
+            collaborator.email,
+            collaborator.passwordHash,
+            collaborator.firstName,
+            collaborator.lastName,
+            collaborator.emailVerified,
+            collaborator.status,
+          ],
         );
+        const createdId = result[0].id;
 
         if (collaborator.roleIds.length > 0) {
-          await manager.insert(
-            CollaboratorRole,
-            collaborator.roleIds.map((roleId) => ({
-              collaboratorId: created.id,
-              roleId,
-              assignedBy: collaborator.assignedBy,
-            })),
+          const roleValues = collaborator.roleIds
+            .map(
+              (roleId) =>
+                `('${createdId}', '${roleId}', '${collaborator.assignedBy || ''}', NOW())`,
+            )
+            .join(',');
+          await manager.query(
+            `INSERT INTO ${collaboratorRoleTable} (collaborator_id, role_id, assigned_by, assigned_at) VALUES ${roleValues}`,
           );
         }
 
-        createdIds.push(created.id);
+        createdIds.push(createdId);
       }
 
       return createdIds;
@@ -146,20 +162,41 @@ export class TypeOrmCollaboratorRepository
     }>,
   ): Promise<void> {
     await this.repository.manager.transaction(async (manager) => {
-      for (const update of updates) {
-        const updatePayload: Partial<Collaborator> = {};
-        if (update.email !== undefined) updatePayload.email = update.email;
-        if (update.firstName !== undefined)
-          updatePayload.firstName = update.firstName;
-        if (update.lastName !== undefined)
-          updatePayload.lastName = update.lastName;
-        if (update.avatarUrl !== undefined)
-          updatePayload.avatarUrl = update.avatarUrl;
-        if (update.passwordHash !== undefined)
-          updatePayload.passwordHash = update.passwordHash;
+      const collaboratorTable = this.tableName('collaborators');
 
-        if (Object.keys(updatePayload).length > 0) {
-          await manager.update(Collaborator, { id: update.id }, updatePayload);
+      for (const update of updates) {
+        const setClauses: string[] = [];
+        const values: any[] = [];
+        let paramIndex = 1;
+
+        if (update.email !== undefined) {
+          setClauses.push(`email = $${paramIndex++}`);
+          values.push(update.email);
+        }
+        if (update.firstName !== undefined) {
+          setClauses.push(`first_name = $${paramIndex++}`);
+          values.push(update.firstName);
+        }
+        if (update.lastName !== undefined) {
+          setClauses.push(`last_name = $${paramIndex++}`);
+          values.push(update.lastName);
+        }
+        if (update.avatarUrl !== undefined) {
+          setClauses.push(`avatar_url = $${paramIndex++}`);
+          values.push(update.avatarUrl);
+        }
+        if (update.passwordHash !== undefined) {
+          setClauses.push(`password_hash = $${paramIndex++}`);
+          values.push(update.passwordHash);
+        }
+
+        if (setClauses.length > 0) {
+          setClauses.push(`updated_at = NOW()`);
+          values.push(update.id);
+          await manager.query(
+            `UPDATE ${collaboratorTable} SET ${setClauses.join(', ')} WHERE id = $${paramIndex}`,
+            values,
+          );
         }
       }
     });
@@ -173,19 +210,23 @@ export class TypeOrmCollaboratorRepository
     }>,
   ): Promise<void> {
     await this.repository.manager.transaction(async (manager) => {
+      const collaboratorRoleTable = this.tableName('collaborator_roles');
+
       for (const update of updates) {
-        await manager.delete(CollaboratorRole, {
-          collaboratorId: update.collaboratorId,
-        });
+        await manager.query(
+          `DELETE FROM ${collaboratorRoleTable} WHERE collaborator_id = $1`,
+          [update.collaboratorId],
+        );
 
         if (update.roleIds.length > 0) {
-          await manager.insert(
-            CollaboratorRole,
-            update.roleIds.map((roleId) => ({
-              collaboratorId: update.collaboratorId,
-              roleId,
-              assignedBy: update.assignedBy,
-            })),
+          const roleValues = update.roleIds
+            .map(
+              (roleId) =>
+                `('${update.collaboratorId}', '${roleId}', '${update.assignedBy || ''}', NOW())`,
+            )
+            .join(',');
+          await manager.query(
+            `INSERT INTO ${collaboratorRoleTable} (collaborator_id, role_id, assigned_by, assigned_at) VALUES ${roleValues}`,
           );
         }
       }
@@ -193,7 +234,11 @@ export class TypeOrmCollaboratorRepository
   }
 
   async updateLastLogin(id: string): Promise<void> {
-    await this.repository.update(id, { lastLoginAt: new Date() });
+    const collaboratorTable = this.tableName('collaborators');
+    await this.repository.query(
+      `UPDATE ${collaboratorTable} SET last_login_at = NOW() WHERE id = $1`,
+      [id],
+    );
   }
 
   async assignRoles(
@@ -202,23 +247,124 @@ export class TypeOrmCollaboratorRepository
     assignedBy?: string,
   ): Promise<void> {
     await this.repository.manager.transaction(async (manager) => {
-      await manager.delete(CollaboratorRole, { collaboratorId });
+      const collaboratorRoleTable = this.tableName('collaborator_roles');
+
+      await manager.query(
+        `DELETE FROM ${collaboratorRoleTable} WHERE collaborator_id = $1`,
+        [collaboratorId],
+      );
 
       if (roleIds.length > 0) {
-        await manager.insert(
-          CollaboratorRole,
-          roleIds.map((roleId) => ({
-            collaboratorId,
-            roleId,
-            assignedBy,
-          })),
+        const roleValues = roleIds
+          .map(
+            (roleId) =>
+              `('${collaboratorId}', '${roleId}', '${assignedBy || ''}', NOW())`,
+          )
+          .join(',');
+        await manager.query(
+          `INSERT INTO ${collaboratorRoleTable} (collaborator_id, role_id, assigned_by, assigned_at) VALUES ${roleValues}`,
         );
       }
     });
   }
 
   async existsByEmail(email: string): Promise<boolean> {
-    const count = await this.repository.count({ where: { email } });
-    return count > 0;
+    const collaboratorTable = this.tableName('collaborators');
+    const result = await this.repository.query(
+      `SELECT COUNT(*) as count FROM ${collaboratorTable} WHERE email = $1`,
+      [email],
+    );
+    return parseInt(result[0].count, 10) > 0;
+  }
+
+  async findById(id: string): Promise<Collaborator | null> {
+    return (await this.repository
+      .createQueryBuilder('c')
+      .from(this.tableName('collaborators'), 'c')
+      .where('c.id = :id', { id })
+      .getOne()) as unknown as Collaborator | null;
+  }
+
+  async save(entity: Partial<Collaborator>): Promise<Collaborator> {
+    const collaboratorTable = this.tableName('collaborators');
+    const result = await this.repository.query(
+      `INSERT INTO ${collaboratorTable} 
+       (id, email, password_hash, first_name, last_name, avatar_url, email_verified, status, created_at, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+       RETURNING *`,
+      [
+        entity.email,
+        entity.passwordHash,
+        entity.firstName,
+        entity.lastName,
+        entity.avatarUrl,
+        entity.emailVerified,
+        entity.status,
+      ],
+    );
+    return result[0] as unknown as Collaborator;
+  }
+
+  async update(
+    id: string,
+    entity: Partial<Collaborator>,
+  ): Promise<Collaborator> {
+    const collaboratorTable = this.tableName('collaborators');
+    const setClauses: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (entity.email !== undefined) {
+      setClauses.push(`email = $${paramIndex++}`);
+      values.push(entity.email);
+    }
+    if (entity.firstName !== undefined) {
+      setClauses.push(`first_name = $${paramIndex++}`);
+      values.push(entity.firstName);
+    }
+    if (entity.lastName !== undefined) {
+      setClauses.push(`last_name = $${paramIndex++}`);
+      values.push(entity.lastName);
+    }
+    if (entity.avatarUrl !== undefined) {
+      setClauses.push(`avatar_url = $${paramIndex++}`);
+      values.push(entity.avatarUrl);
+    }
+    if (entity.passwordHash !== undefined) {
+      setClauses.push(`password_hash = $${paramIndex++}`);
+      values.push(entity.passwordHash);
+    }
+    if (entity.status !== undefined) {
+      setClauses.push(`status = $${paramIndex++}`);
+      values.push(entity.status);
+    }
+
+    if (setClauses.length > 0) {
+      setClauses.push(`updated_at = NOW()`);
+      values.push(id);
+      await this.repository.query(
+        `UPDATE ${collaboratorTable} SET ${setClauses.join(', ')} WHERE id = $${paramIndex}`,
+        values,
+      );
+    }
+
+    return (await this.findById(id))!;
+  }
+
+  async delete(id: string): Promise<void> {
+    const collaboratorTable = this.tableName('collaborators');
+    await this.repository.query(
+      `UPDATE ${collaboratorTable} SET deleted_at = NOW() WHERE id = $1`,
+      [id],
+    );
+  }
+
+  async exists(id: string): Promise<boolean> {
+    const collaboratorTable = this.tableName('collaborators');
+    const result = await this.repository.query(
+      `SELECT COUNT(*) as count FROM ${collaboratorTable} WHERE id = $1`,
+      [id],
+    );
+    return parseInt(result[0].count, 10) > 0;
   }
 }

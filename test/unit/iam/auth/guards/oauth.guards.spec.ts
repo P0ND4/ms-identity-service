@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { GoogleOAuthGuard } from 'src/contexts/iam/infrastructure/http-api/v1/auth/guards/google-oauth.guard';
 import { MicrosoftOAuthGuard } from 'src/contexts/iam/infrastructure/http-api/v1/auth/guards/microsoft-oauth.guard';
 import { SlackOAuthGuard } from 'src/contexts/iam/infrastructure/http-api/v1/auth/guards/slack-oauth.guard';
+import { AppleOAuthGuard } from 'src/contexts/iam/infrastructure/http-api/v1/auth/guards/apple-oauth.guard';
 import { FoodaException } from 'src/contexts/shared/domain/exceptions/identity.exception';
 
 describe('OAuth Guards', () => {
@@ -166,6 +167,63 @@ describe('OAuth Guards', () => {
       expect.objectContaining({
         status: HttpStatus.NOT_FOUND,
         response: expect.objectContaining({ code: 'ID-1022' }),
+      }),
+    );
+  });
+
+  it('AppleOAuthGuard: calls parent canActivate when enabled', () => {
+    const baseCanActivateSpy = jest
+      .spyOn(Object.getPrototypeOf(AppleOAuthGuard.prototype), 'canActivate')
+      .mockReturnValue(true);
+    configService.get.mockReturnValue(true);
+    const guard = new AppleOAuthGuard(configService);
+
+    const result = guard.canActivate(context);
+
+    expect(result).toBe(true);
+    expect(configService.get).toHaveBeenCalledWith(
+      'ENABLE_APPLE_OAUTH_REDIRECT',
+    );
+    expect(baseCanActivateSpy).toHaveBeenCalledWith(context);
+    baseCanActivateSpy.mockRestore();
+  });
+
+  it('AppleOAuthGuard: throws FoodaException when disabled', () => {
+    configService.get.mockReturnValue(false);
+    const guard = new AppleOAuthGuard(configService);
+
+    let error: unknown;
+    try {
+      guard.canActivate(context);
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeInstanceOf(FoodaException);
+    expect(error).toEqual(
+      expect.objectContaining({
+        status: HttpStatus.NOT_FOUND,
+        response: expect.objectContaining({ code: 'ID-1096' }),
+      }),
+    );
+  });
+
+  it('AppleOAuthGuard: throws FoodaException when config is undefined', () => {
+    configService.get.mockReturnValue(undefined);
+    const guard = new AppleOAuthGuard(configService);
+
+    let error: unknown;
+    try {
+      guard.canActivate(context);
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeInstanceOf(FoodaException);
+    expect(error).toEqual(
+      expect.objectContaining({
+        status: HttpStatus.NOT_FOUND,
+        response: expect.objectContaining({ code: 'ID-1096' }),
       }),
     );
   });

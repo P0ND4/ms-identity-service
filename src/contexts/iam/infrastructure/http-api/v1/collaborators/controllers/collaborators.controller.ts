@@ -33,6 +33,12 @@ import { UpdateCollaboratorsRolesDto } from '../dtos/update-collaborators-roles.
 const COLLABORATOR_STATUS_VALUES = Object.values(CollaboratorStatus);
 
 @ApiTags('IAM Collaborators')
+@ApiHeader({
+  name: 'x-tenant-id',
+  required: true,
+  description: 'Identificador del tenant (schema de la base de datos)',
+  example: 'tenant_abc',
+})
 @Controller(V1_IAM + '/collaborators')
 export class CollaboratorsController {
   constructor(private readonly collaboratorsUseCase: ICollaboratorsUseCase) {}

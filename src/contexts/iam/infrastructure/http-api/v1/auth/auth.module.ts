@@ -17,6 +17,10 @@ import { MicrosoftOAuthGuard } from './guards/microsoft-oauth.guard';
 import { MicrosoftStrategy } from './strategies/microsoft.strategy';
 import { SlackOAuthGuard } from './guards/slack-oauth.guard';
 import { SlackStrategy } from './strategies/slack.strategy';
+import { GithubOAuthGuard } from './guards/github-oauth.guard';
+import { GithubStrategy } from './strategies/github.strategy';
+import { AppleOAuthGuard } from './guards/apple-oauth.guard';
+import { AppleStrategy } from './strategies/apple.strategy';
 
 @Module({
   imports: [
@@ -45,6 +49,10 @@ import { SlackStrategy } from './strategies/slack.strategy';
     MicrosoftStrategy,
     SlackOAuthGuard,
     SlackStrategy,
+    GithubOAuthGuard,
+    GithubStrategy,
+    AppleOAuthGuard,
+    AppleStrategy,
   ],
   exports: [IAuthUseCase],
 })

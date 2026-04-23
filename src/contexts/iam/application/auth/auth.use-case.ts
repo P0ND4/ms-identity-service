@@ -17,7 +17,6 @@ import { FoodaException } from 'src/contexts/shared/domain/exceptions/identity.e
 import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/identity-exception.codes';
 import {
   Collaborator,
-  CollaboratorRole,
   CollaboratorStatus,
   OAuthProvider,
 } from 'src/contexts/shared/domain/entities';
@@ -25,6 +24,8 @@ import { IOAuthAccountRepository } from 'src/contexts/shared/domain/repositories
 import { verifyGoogleIdTokenAndBuildOAuthProfile } from './helpers/google-oauth.helper';
 import { fetchMicrosoftOAuthProfile } from './helpers/microsoft-oauth.helper';
 import { fetchSlackOAuthProfile } from './helpers/slack-oauth.helper';
+import { fetchGithubOAuthProfile } from './helpers/github-oauth.helper';
+import { verifyAppleIdTokenAndBuildOAuthProfile } from './helpers/apple-oauth.helper';
 
 @Injectable()
 export class AuthService implements IAuthUseCase {
@@ -146,6 +147,29 @@ export class AuthService implements IAuthUseCase {
     return await this.loginOAuth(profile);
   }
 
+  async loginGithubAccessToken(accessToken: string): Promise<AuthResponse> {
+    const profile = await fetchGithubOAuthProfile(accessToken);
+    return await this.loginOAuth(profile);
+  }
+
+  async loginAppleIdToken(idToken: string): Promise<AuthResponse> {
+    const clientId = this.configService.get<string>('APPLE_CLIENT_ID');
+
+    if (!clientId) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1097,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const profile = await verifyAppleIdTokenAndBuildOAuthProfile({
+      idToken,
+      audience: clientId,
+    });
+
+    return await this.loginOAuth(profile);
+  }
+
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
     const [id, tokenPlain] = refreshToken.split('.');
     if (!id || !tokenPlain)
@@ -229,14 +253,9 @@ export class AuthService implements IAuthUseCase {
   private async generateAuthResponse(
     user: Collaborator,
   ): Promise<AuthResponse> {
-    const roles = (user.collaboratorRoles ?? []).map(
-      (cr: CollaboratorRole) => cr.role.key,
-    );
-
     const payload = {
       sub: user.id,
       email: user.email,
-      roles: roles,
     };
 
     const accessToken = await this.jwtService.signAsync(payload);
@@ -265,7 +284,6 @@ export class AuthService implements IAuthUseCase {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        roles: roles,
       },
     };
   }

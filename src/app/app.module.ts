@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { databaseConfig } from 'src/config/database.config';
 import { IamContextModule } from 'src/contexts/iam/infrastructure/iam.module';
 import environment from 'src/config/environment.config';
+import { TenantModule } from 'src/contexts/shared/infrastructure/tenant/tenant.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import environment from 'src/config/environment.config';
       useFactory: (configService: ConfigService) =>
         databaseConfig(configService),
     }),
+    TenantModule,
     IamContextModule,
   ],
 })

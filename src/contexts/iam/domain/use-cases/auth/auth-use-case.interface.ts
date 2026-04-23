@@ -7,12 +7,11 @@ export interface AuthResponse {
     email: string;
     firstName: string;
     lastName: string;
-    roles: string[];
   };
 }
 
 export interface OAuthProfile {
-  provider: 'google' | 'microsoft' | 'slack';
+  provider: 'google' | 'microsoft' | 'slack' | 'github' | 'apple';
   providerAccountId: string;
   email: string;
   firstName: string;
@@ -31,6 +30,8 @@ export abstract class IAuthUseCase {
     accessToken: string,
   ): Promise<AuthResponse>;
   abstract loginSlackAccessToken(accessToken: string): Promise<AuthResponse>;
+  abstract loginGithubAccessToken(accessToken: string): Promise<AuthResponse>;
+  abstract loginAppleIdToken(idToken: string): Promise<AuthResponse>;
   abstract refreshToken(refreshToken: string): Promise<AuthResponse>;
   abstract logout(accessToken: string, refreshToken: string): Promise<void>;
   abstract logoutAllDevices(userId: string): Promise<void>;

@@ -11,6 +11,7 @@ import {
 import {
   ApiBadRequestResponse,
   ApiBody,
+  ApiHeader,
   ApiConflictResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -27,6 +28,12 @@ import { UpdateRolesDto } from '../dtos/update-roles.dto';
 import { UpdateRolesPermissionsDto } from '../dtos/update-roles-permissions.dto';
 
 @ApiTags('IAM Access')
+@ApiHeader({
+  name: 'x-tenant-id',
+  required: true,
+  description: 'Identificador del tenant (schema de la base de datos)',
+  example: 'tenant_abc',
+})
 @Controller(V1_IAM + '/access')
 export class AccessController {
   constructor(private readonly accessUseCase: IAccessUseCase) {}

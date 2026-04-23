@@ -5,6 +5,8 @@ import { AuthService } from 'src/contexts/iam/application/auth/auth.use-case';
 import { verifyGoogleIdTokenAndBuildOAuthProfile } from 'src/contexts/iam/application/auth/helpers/google-oauth.helper';
 import { fetchMicrosoftOAuthProfile } from 'src/contexts/iam/application/auth/helpers/microsoft-oauth.helper';
 import { fetchSlackOAuthProfile } from 'src/contexts/iam/application/auth/helpers/slack-oauth.helper';
+import { fetchGithubOAuthProfile } from 'src/contexts/iam/application/auth/helpers/github-oauth.helper';
+import { verifyAppleIdTokenAndBuildOAuthProfile } from 'src/contexts/iam/application/auth/helpers/apple-oauth.helper';
 import { CollaboratorStatus } from 'src/contexts/shared/domain/entities';
 import { IHashing } from 'src/contexts/shared/domain/interfaces/hashing.interface';
 import { IOAuthAccountRepository } from 'src/contexts/shared/domain/repositories/oauth-account.repository.interface';
@@ -30,6 +32,20 @@ jest.mock(
   'src/contexts/iam/application/auth/helpers/slack-oauth.helper',
   () => ({
     fetchSlackOAuthProfile: jest.fn(),
+  }),
+);
+
+jest.mock(
+  'src/contexts/iam/application/auth/helpers/github-oauth.helper',
+  () => ({
+    fetchGithubOAuthProfile: jest.fn(),
+  }),
+);
+
+jest.mock(
+  'src/contexts/iam/application/auth/helpers/apple-oauth.helper',
+  () => ({
+    verifyAppleIdTokenAndBuildOAuthProfile: jest.fn(),
   }),
 );
 
@@ -340,6 +356,92 @@ describe('AuthService', () => {
 
     expect(fetchSlackOAuthProfile).toHaveBeenCalledWith('slack-access');
     expect(loginOAuthSpy).toHaveBeenCalledWith(profile);
+  });
+
+  it('loginGithubAccessToken: fetches profile and delegates to loginOAuth', async () => {
+    const profile = {
+      provider: 'github',
+      providerAccountId: 'github-id',
+      email: 'github@company.com',
+      firstName: 'Github',
+      lastName: 'User',
+    } as any;
+
+    (fetchGithubOAuthProfile as jest.Mock).mockResolvedValue(profile);
+    const loginOAuthSpy = jest
+      .spyOn(service, 'loginOAuth')
+      .mockResolvedValue({} as any);
+
+    await service.loginGithubAccessToken('github-access');
+
+    expect(fetchGithubOAuthProfile).toHaveBeenCalledWith('github-access');
+    expect(loginOAuthSpy).toHaveBeenCalledWith(profile);
+  });
+
+  it('loginGithubAccessToken: propagates errors from fetchGithubOAuthProfile', async () => {
+    const error = new Error('GitHub API error');
+    (fetchGithubOAuthProfile as jest.Mock).mockRejectedValue(error);
+
+    await expect(
+      service.loginGithubAccessToken('invalid-token'),
+    ).rejects.toThrow('GitHub API error');
+  });
+
+  it('loginAppleIdToken: throws Ex1097 when clientId config is missing', async () => {
+    configService.get.mockReturnValue(undefined);
+
+    await expect(service.loginAppleIdToken('apple-id-token')).rejects.toEqual(
+      expect.objectContaining({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        response: expect.objectContaining({ code: 'ID-1097' }),
+      }),
+    );
+  });
+
+  it('loginAppleIdToken: validates token and delegates to loginOAuth', async () => {
+    configService.get.mockImplementation((key: string) => {
+      if (key === 'APPLE_CLIENT_ID') return 'apple-client-id';
+      return undefined;
+    });
+
+    const profile = {
+      provider: 'apple',
+      providerAccountId: 'apple-id',
+      email: 'apple@company.com',
+      firstName: 'Apple',
+      lastName: 'User',
+    } as any;
+
+    (verifyAppleIdTokenAndBuildOAuthProfile as jest.Mock).mockResolvedValue(
+      profile,
+    );
+    const loginOAuthSpy = jest
+      .spyOn(service, 'loginOAuth')
+      .mockResolvedValue({} as any);
+
+    await service.loginAppleIdToken('apple-id-token');
+
+    expect(verifyAppleIdTokenAndBuildOAuthProfile).toHaveBeenCalledWith({
+      idToken: 'apple-id-token',
+      audience: 'apple-client-id',
+    });
+    expect(loginOAuthSpy).toHaveBeenCalledWith(profile);
+  });
+
+  it('loginAppleIdToken: propagates errors from verifyAppleIdTokenAndBuildOAuthProfile', async () => {
+    configService.get.mockImplementation((key: string) => {
+      if (key === 'APPLE_CLIENT_ID') return 'apple-client-id';
+      return undefined;
+    });
+
+    const error = new Error('Apple token validation failed');
+    (verifyAppleIdTokenAndBuildOAuthProfile as jest.Mock).mockRejectedValue(
+      error,
+    );
+
+    await expect(service.loginAppleIdToken('invalid-token')).rejects.toThrow(
+      'Apple token validation failed',
+    );
   });
 
   it('refreshToken: throws Ex1005 for invalid token format', async () => {

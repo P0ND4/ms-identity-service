@@ -7,10 +7,15 @@ import { ApiResponseInterceptor } from './contexts/shared/interceptors/api.respo
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { DataSource } from 'typeorm';
+import { SchemaResolver } from './contexts/shared/infrastructure/tenant/schema-resolver.service';
+import { TenantMiddleware } from './contexts/shared/infrastructure/tenant/tenant-middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+  const dataSource = app.get(DataSource);
+  const schemaResolver = new SchemaResolver(dataSource);
   const nodeEnv = configService.get<string>('NODE_ENV') ?? 'development';
   const port = configService.get<number>('PORT') ?? 3000;
 
@@ -30,6 +35,22 @@ async function bootstrap() {
       });
     SwaggerModule.setup('api', app, documentFactory());
   }
+
+  app.use(TenantMiddleware);
+
+  app.use(async (req: any, res: any, next: any) => {
+    const tenantId = req.tenantId;
+
+    if (tenantId) {
+      try {
+        await schemaResolver.ensureSchema(tenantId);
+      } catch (error) {
+        console.error('Error ensuring schema:', error);
+      }
+    }
+
+    next();
+  });
 
   app.use((req: any, res: any, next: any) => {
     const logger = new Logger('HTTP');
@@ -55,6 +76,7 @@ async function bootstrap() {
 
   await app.listen(port);
 }
+
 bootstrap().catch((err) => {
   console.log(err);
   process.exit(1);

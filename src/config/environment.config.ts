@@ -35,12 +35,24 @@ interface Environment {
   SLACK_CLIENT_ID?: string;
   SLACK_CLIENT_SECRET?: string;
   SLACK_CALLBACK_URL?: string;
+  GITHUB_CLIENT_ID?: string;
+  GITHUB_CLIENT_SECRET?: string;
+  GITHUB_CALLBACK_URL?: string;
+  APPLE_CLIENT_ID?: string;
+  APPLE_TEAM_ID?: string;
+  APPLE_KEY_ID?: string;
+  APPLE_PRIVATE_KEY?: string;
+  APPLE_CALLBACK_URL?: string;
   ENABLE_GOOGLE_OAUTH_REDIRECT: boolean;
   ENABLE_MICROSOFT_OAUTH_REDIRECT: boolean;
   ENABLE_SLACK_OAUTH_REDIRECT: boolean;
   ENABLE_GOOGLE_TOKEN_EXCHANGE: boolean;
   ENABLE_MICROSOFT_TOKEN_EXCHANGE: boolean;
   ENABLE_SLACK_TOKEN_EXCHANGE: boolean;
+  ENABLE_GITHUB_OAUTH_REDIRECT: boolean;
+  ENABLE_GITHUB_TOKEN_EXCHANGE: boolean;
+  ENABLE_APPLE_OAUTH_REDIRECT: boolean;
+  ENABLE_APPLE_TOKEN_EXCHANGE: boolean;
 }
 
 export default async (): Promise<Environment> => {
@@ -97,6 +109,9 @@ export default async (): Promise<Environment> => {
     SLACK_CLIENT_ID: process.env.SLACK_CLIENT_ID,
     SLACK_CLIENT_SECRET: process.env.SLACK_CLIENT_SECRET,
     SLACK_CALLBACK_URL: process.env.SLACK_CALLBACK_URL,
+    GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
+    GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
+    GITHUB_CALLBACK_URL: process.env.GITHUB_CALLBACK_URL,
     ENABLE_GOOGLE_OAUTH_REDIRECT:
       process.env.ENABLE_GOOGLE_OAUTH_REDIRECT === 'true',
     ENABLE_MICROSOFT_OAUTH_REDIRECT:
@@ -109,6 +124,19 @@ export default async (): Promise<Environment> => {
       process.env.ENABLE_MICROSOFT_TOKEN_EXCHANGE !== 'false',
     ENABLE_SLACK_TOKEN_EXCHANGE:
       process.env.ENABLE_SLACK_TOKEN_EXCHANGE !== 'false',
+    ENABLE_GITHUB_OAUTH_REDIRECT:
+      process.env.ENABLE_GITHUB_OAUTH_REDIRECT === 'true',
+    ENABLE_GITHUB_TOKEN_EXCHANGE:
+      process.env.ENABLE_GITHUB_TOKEN_EXCHANGE !== 'false',
+    APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID,
+    APPLE_TEAM_ID: process.env.APPLE_TEAM_ID,
+    APPLE_KEY_ID: process.env.APPLE_KEY_ID,
+    APPLE_PRIVATE_KEY: process.env.APPLE_PRIVATE_KEY,
+    APPLE_CALLBACK_URL: process.env.APPLE_CALLBACK_URL,
+    ENABLE_APPLE_OAUTH_REDIRECT:
+      process.env.ENABLE_APPLE_OAUTH_REDIRECT === 'true',
+    ENABLE_APPLE_TOKEN_EXCHANGE:
+      process.env.ENABLE_APPLE_TOKEN_EXCHANGE !== 'false',
 
     // Server
     NODE_ENV: process.env.NODE_ENV ?? 'development',

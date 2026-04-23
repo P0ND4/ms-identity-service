@@ -36,6 +36,10 @@ import { LoginSlackTokenDto } from '../dtos/login-slack-token.dto';
 import { SlackOAuthGuard } from '../guards/slack-oauth.guard';
 import { FoodaException } from 'src/contexts/shared/domain/exceptions/identity.exception';
 import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/identity-exception.codes';
+import { GithubOAuthGuard } from '../guards/github-oauth.guard';
+import { LoginGithubTokenDto } from '../dtos/login-github-token.dto';
+import { AppleOAuthGuard } from '../guards/apple-oauth.guard';
+import { LoginAppleTokenDto } from '../dtos/login-apple-token.dto';
 
 type OAuthRequest = Request & { user: OAuthProfile };
 
@@ -53,6 +57,12 @@ type OAuthRequest = Request & { user: OAuthProfile };
 //    (e.g. /login/{provider}/token), validate that provider token server-side,
 //    map it to OAuthProfile, and finally issue this service tokens.
 @ApiTags('IAM Autenticacion')
+@ApiHeader({
+  name: 'x-tenant-id',
+  required: true,
+  description: 'Identificador del tenant (schema de la base de datos)',
+  example: 'tenant_abc',
+})
 @Controller(V1_IAM + '/auth')
 export class AuthController {
   constructor(
@@ -63,7 +73,8 @@ export class AuthController {
   @Post('login/local')
   @ApiOperation({
     summary: 'Iniciar sesion con correo y contraseña',
-    description: 'Autentica un colaborador usando credenciales locales.',
+    description:
+      'Autentica un colaborador usando credenciales locales. Requires x-tenant-id header.',
   })
   @ApiBody({ type: LoginLocalDto })
   @ApiOkResponse({ description: 'Autenticacion exitosa.' })
@@ -241,6 +252,119 @@ export class AuthController {
     }
 
     return await this.authService.loginSlackAccessToken(body.accessToken);
+  }
+
+  @Get('login/github')
+  @ApiOperation({
+    summary: 'Iniciar login OAuth con GitHub',
+    description:
+      'Redirige al usuario a la pantalla de consentimiento de GitHub OAuth.',
+  })
+  @ApiOkResponse({
+    description: 'Redireccion al proveedor OAuth de GitHub.',
+  })
+  @UseGuards(GithubOAuthGuard)
+  loginGithub() {}
+
+  @Get('login/github/callback')
+  @ApiOperation({
+    summary: 'Callback OAuth de GitHub',
+    description:
+      'Procesa el callback de GitHub OAuth y retorna los tokens de acceso y refresh del servicio.',
+  })
+  @ApiOkResponse({
+    description: 'Autenticacion OAuth con GitHub exitosa.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Fallo la autenticacion OAuth con GitHub.',
+  })
+  @UseGuards(GithubOAuthGuard)
+  async loginGithubCallback(@Req() req: OAuthRequest): Promise<AuthResponse> {
+    return await this.authService.loginOAuth(req.user);
+  }
+
+  @Post('login/github/token')
+  @ApiOperation({
+    summary: 'Intercambiar access token de GitHub por tokens del servicio',
+    description:
+      'Valida un access token de GitHub obtenido por SDK y retorna tokens del servicio.',
+  })
+  @ApiBody({ type: LoginGithubTokenDto })
+  @ApiOkResponse({ description: 'Intercambio de token exitoso.' })
+  @ApiBadRequestResponse({ description: 'Payload invalido.' })
+  @ApiUnauthorizedResponse({
+    description: 'Access token de GitHub invalido.',
+  })
+  async loginGithubToken(
+    @Body() body: LoginGithubTokenDto,
+  ): Promise<AuthResponse> {
+    const enabled =
+      this.configService.get<boolean>('ENABLE_GITHUB_TOKEN_EXCHANGE') ?? true;
+
+    if (!enabled) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1026,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return await this.authService.loginGithubAccessToken(body.accessToken);
+  }
+
+  @Get('login/apple')
+  @ApiOperation({
+    summary: 'Iniciar login OAuth con Apple',
+    description:
+      'Redirige al usuario a la pantalla de consentimiento de Apple OAuth.',
+  })
+  @ApiOkResponse({
+    description: 'Redireccion al proveedor OAuth de Apple.',
+  })
+  @UseGuards(AppleOAuthGuard)
+  loginApple() {}
+
+  @Get('login/apple/callback')
+  @ApiOperation({
+    summary: 'Callback OAuth de Apple',
+    description:
+      'Procesa el callback de Apple OAuth y retorna los tokens de acceso y refresh del servicio.',
+  })
+  @ApiOkResponse({ description: 'Autenticacion OAuth con Apple exitosa.' })
+  @ApiUnauthorizedResponse({
+    description: 'Fallo la autenticacion OAuth con Apple.',
+  })
+  @UseGuards(AppleOAuthGuard)
+  async loginAppleCallback(@Req() req: OAuthRequest): Promise<AuthResponse> {
+    return await this.authService.loginOAuth(req.user);
+  }
+
+  @Post('login/apple/token')
+  @ApiOperation({
+    summary: 'Intercambiar ID token de Apple por tokens del servicio',
+    description:
+      'Valida un ID token de Apple obtenido por Sign in with Apple SDK y retorna tokens del servicio.',
+  })
+  @ApiBody({ type: LoginAppleTokenDto })
+  @ApiOkResponse({ description: 'Intercambio de token exitoso.' })
+  @ApiBadRequestResponse({ description: 'Payload invalido.' })
+  @ApiUnauthorizedResponse({ description: 'ID token de Apple invalido.' })
+  @ApiInternalServerErrorResponse({
+    description: 'Falta configuracion de Apple Sign-In.',
+  })
+  async loginAppleToken(
+    @Body() body: LoginAppleTokenDto,
+  ): Promise<AuthResponse> {
+    const enabled =
+      this.configService.get<boolean>('ENABLE_APPLE_TOKEN_EXCHANGE') ?? true;
+
+    if (!enabled) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1098,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return await this.authService.loginAppleIdToken(body.idToken);
   }
 
   @Post('refresh')

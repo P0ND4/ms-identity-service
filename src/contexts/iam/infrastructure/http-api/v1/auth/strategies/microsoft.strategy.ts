@@ -7,8 +7,7 @@ import { Strategy } from 'passport-microsoft';
 export class MicrosoftStrategy extends PassportStrategy(Strategy, 'microsoft') {
   constructor(private readonly configService: ConfigService) {
     const clientID =
-      configService.get<string>('MICROSOFT_CLIENT_ID') ??
-      'microsoft-disabled';
+      configService.get<string>('MICROSOFT_CLIENT_ID') ?? 'microsoft-disabled';
     const clientSecret =
       configService.get<string>('MICROSOFT_CLIENT_SECRET') ??
       'microsoft-disabled';

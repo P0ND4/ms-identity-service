@@ -17,6 +17,8 @@ describe('AuthController', () => {
     loginGoogleIdToken: jest.fn(),
     loginMicrosoftAccessToken: jest.fn(),
     loginSlackAccessToken: jest.fn(),
+    loginGithubAccessToken: jest.fn(),
+    loginAppleIdToken: jest.fn(),
     refreshToken: jest.fn(),
     logout: jest.fn(),
   } as unknown as jest.Mocked<IAuthUseCase>;
@@ -260,6 +262,136 @@ describe('AuthController', () => {
       controller.loginSlackToken({ accessToken: 'slack-access' }),
     ).rejects.toBeInstanceOf(FoodaException);
     expect(authUseCase.loginSlackAccessToken).not.toHaveBeenCalled();
+  });
+
+  it('loginGithub: returns undefined (guard handles redirect)', () => {
+    expect(controller.loginGithub()).toBeUndefined();
+  });
+
+  it('loginGithubCallback: returns auth response', async () => {
+    authUseCase.loginOAuth.mockResolvedValue(authResponse);
+
+    const result = await controller.loginGithubCallback({
+      user: oauthProfile,
+    } as any);
+
+    expect(result).toEqual(authResponse);
+    expect(authUseCase.loginOAuth).toHaveBeenCalledWith(oauthProfile);
+  });
+
+  it('loginGithubCallback: propagates use-case errors', async () => {
+    const error = new Error('oauth github failed');
+    authUseCase.loginOAuth.mockRejectedValue(error);
+
+    await expect(
+      controller.loginGithubCallback({ user: oauthProfile } as any),
+    ).rejects.toThrow(error);
+  });
+
+  it('loginGithubToken: exchanges token when enabled', async () => {
+    configService.get.mockReturnValue(true);
+    authUseCase.loginGithubAccessToken.mockResolvedValue(authResponse);
+
+    const result = await controller.loginGithubToken({
+      accessToken: 'github-access',
+    });
+
+    expect(result).toEqual(authResponse);
+    expect(configService.get).toHaveBeenCalledWith(
+      'ENABLE_GITHUB_TOKEN_EXCHANGE',
+    );
+    expect(authUseCase.loginGithubAccessToken).toHaveBeenCalledWith(
+      'github-access',
+    );
+  });
+
+  it('loginGithubToken: exchanges token when config is undefined (fallback true)', async () => {
+    configService.get.mockReturnValue(undefined);
+    authUseCase.loginGithubAccessToken.mockResolvedValue(authResponse);
+
+    const result = await controller.loginGithubToken({
+      accessToken: 'github-access',
+    });
+
+    expect(result).toEqual(authResponse);
+    expect(authUseCase.loginGithubAccessToken).toHaveBeenCalledWith(
+      'github-access',
+    );
+  });
+
+  it('loginGithubToken: throws FoodaException when exchange is disabled', async () => {
+    configService.get.mockReturnValue(false);
+
+    await expect(
+      controller.loginGithubToken({ accessToken: 'github-access' }),
+    ).rejects.toBeInstanceOf(FoodaException);
+    expect(authUseCase.loginGithubAccessToken).not.toHaveBeenCalled();
+  });
+
+  it('loginApple: returns undefined (guard handles redirect)', () => {
+    expect(controller.loginApple()).toBeUndefined();
+  });
+
+  it('loginAppleCallback: returns auth response', async () => {
+    authUseCase.loginOAuth.mockResolvedValue(authResponse);
+
+    const result = await controller.loginAppleCallback({
+      user: { ...oauthProfile, provider: 'apple' } as any,
+    } as any);
+
+    expect(result).toEqual(authResponse);
+    expect(authUseCase.loginOAuth).toHaveBeenCalledWith({
+      ...oauthProfile,
+      provider: 'apple',
+    });
+  });
+
+  it('loginAppleCallback: propagates use-case errors', async () => {
+    const error = new Error('oauth apple failed');
+    authUseCase.loginOAuth.mockRejectedValue(error);
+
+    await expect(
+      controller.loginAppleCallback({ user: oauthProfile } as any),
+    ).rejects.toThrow(error);
+  });
+
+  it('loginAppleToken: exchanges token when enabled', async () => {
+    configService.get.mockReturnValue(true);
+    authUseCase.loginAppleIdToken.mockResolvedValue(authResponse);
+
+    const result = await controller.loginAppleToken({
+      idToken: 'apple-id',
+    });
+
+    expect(result).toEqual(authResponse);
+    expect(configService.get).toHaveBeenCalledWith(
+      'ENABLE_APPLE_TOKEN_EXCHANGE',
+    );
+    expect(authUseCase.loginAppleIdToken).toHaveBeenCalledWith('apple-id');
+  });
+
+  it('loginAppleToken: exchanges token when config is undefined (fallback true)', async () => {
+    configService.get.mockReturnValue(undefined);
+    authUseCase.loginAppleIdToken.mockResolvedValue(authResponse);
+
+    const result = await controller.loginAppleToken({
+      idToken: 'apple-id',
+    });
+
+    expect(result).toEqual(authResponse);
+    expect(authUseCase.loginAppleIdToken).toHaveBeenCalledWith('apple-id');
+  });
+
+  it('loginAppleToken: throws FoodaException when exchange is disabled', async () => {
+    configService.get.mockReturnValue(false);
+
+    await expect(
+      controller.loginAppleToken({ idToken: 'apple-id' }),
+    ).rejects.toMatchObject({
+      status: HttpStatus.NOT_FOUND,
+      response: expect.objectContaining({ code: 'ID-1098' }),
+    });
+    expect(authUseCase.loginAppleIdToken).not.toHaveBeenCalled();
   });
 
   it('refresh: returns new tokens', async () => {
