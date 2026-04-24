@@ -36,7 +36,6 @@ describe('AuthController', () => {
       email: 'user@company.com',
       firstName: 'Jane',
       lastName: 'Doe',
-      roles: ['admin'],
     },
   };
 
@@ -367,7 +366,10 @@ describe('AuthController', () => {
     expect(configService.get).toHaveBeenCalledWith(
       'ENABLE_APPLE_TOKEN_EXCHANGE',
     );
-    expect(authUseCase.loginAppleIdToken).toHaveBeenCalledWith('apple-id');
+    expect(authUseCase.loginAppleIdToken).toHaveBeenCalledWith(
+      'apple-id',
+      undefined,
+    );
   });
 
   it('loginAppleToken: exchanges token when config is undefined (fallback true)', async () => {
@@ -379,7 +381,10 @@ describe('AuthController', () => {
     });
 
     expect(result).toEqual(authResponse);
-    expect(authUseCase.loginAppleIdToken).toHaveBeenCalledWith('apple-id');
+    expect(authUseCase.loginAppleIdToken).toHaveBeenCalledWith(
+      'apple-id',
+      undefined,
+    );
   });
 
   it('loginAppleToken: throws FoodaException when exchange is disabled', async () => {

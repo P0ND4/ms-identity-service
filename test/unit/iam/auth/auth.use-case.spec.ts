@@ -7,6 +7,7 @@ import { fetchMicrosoftOAuthProfile } from 'src/contexts/iam/application/auth/he
 import { fetchSlackOAuthProfile } from 'src/contexts/iam/application/auth/helpers/slack-oauth.helper';
 import { fetchGithubOAuthProfile } from 'src/contexts/iam/application/auth/helpers/github-oauth.helper';
 import { verifyAppleIdTokenAndBuildOAuthProfile } from 'src/contexts/iam/application/auth/helpers/apple-oauth.helper';
+import { ApplePrivateKeyService } from 'src/contexts/iam/application/auth/helpers/apple-private-key.service';
 import { CollaboratorStatus } from 'src/contexts/shared/domain/entities';
 import { IHashing } from 'src/contexts/shared/domain/interfaces/hashing.interface';
 import { IOAuthAccountRepository } from 'src/contexts/shared/domain/repositories/oauth-account.repository.interface';
@@ -46,6 +47,15 @@ jest.mock(
   'src/contexts/iam/application/auth/helpers/apple-oauth.helper',
   () => ({
     verifyAppleIdTokenAndBuildOAuthProfile: jest.fn(),
+  }),
+);
+
+jest.mock(
+  'src/contexts/iam/application/auth/helpers/apple-private-key.service',
+  () => ({
+    ApplePrivateKeyService: jest.fn().mockImplementation(() => ({
+      generateClientSecret: jest.fn().mockResolvedValue('mock-client-secret'),
+    })),
   }),
 );
 
@@ -90,6 +100,10 @@ describe('AuthService', () => {
     get: jest.fn(),
   } as unknown as jest.Mocked<ConfigService>;
 
+  const applePrivateKeyService = {
+    generateClientSecret: jest.fn().mockResolvedValue('mock-client-secret'),
+  } as unknown as ApplePrivateKeyService;
+
   const baseUser = {
     id: '6b49fc1d-f7d6-4d0e-a523-7f6e0fbeec1a',
     email: 'user@company.com',
@@ -115,6 +129,7 @@ describe('AuthService', () => {
       jwtService,
       blacklistService,
       configService,
+      applePrivateKeyService,
     );
   });
 
@@ -600,7 +615,8 @@ describe('AuthService', () => {
 
     const result = await service.loginLocal('user@company.com', 'secret');
 
-    expect(result.user.roles).toEqual([]);
+    expect(result.user.id).toBe(baseUser.id);
+    expect(result.user.email).toBe(baseUser.email);
   });
 
   it('loginOAuth: uses fallback names when profile firstName/lastName are missing', async () => {

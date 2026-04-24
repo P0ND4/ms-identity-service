@@ -412,4 +412,24 @@ export const FoodaExceptionCodes = {
     `${SERVICE_PREFIX}-1101`,
     'idToken de Apple no tiene que estar vacío',
   ),
+  Ex1102: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1102`,
+    'No se pudo obtener las public keys de Apple',
+  ),
+  Ex1103: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1103`,
+    'Token de Apple sin key ID',
+  ),
+  Ex1104: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1104`,
+    'No se encontró la public key de Apple',
+  ),
+  Ex1105: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1105`,
+    'Nonce de Apple inválido',
+  ),
+  Ex1106: new FoodaExceptionInfo(
+    `${SERVICE_PREFIX}-1106`,
+    'Error al revocar token de Apple',
+  ),
 };

@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class LoginAppleTokenDto {
   @IsString()
@@ -10,4 +10,12 @@ export class LoginAppleTokenDto {
       'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FwcGxl',
   })
   idToken!: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
+    description: 'Nonce para validación de seguridad (recomendado)',
+    example: 'random-nonce-value-123',
+  })
+  nonce?: string;
 }

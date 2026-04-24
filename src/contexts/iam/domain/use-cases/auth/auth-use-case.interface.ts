@@ -31,8 +31,12 @@ export abstract class IAuthUseCase {
   ): Promise<AuthResponse>;
   abstract loginSlackAccessToken(accessToken: string): Promise<AuthResponse>;
   abstract loginGithubAccessToken(accessToken: string): Promise<AuthResponse>;
-  abstract loginAppleIdToken(idToken: string): Promise<AuthResponse>;
+  abstract loginAppleIdToken(
+    idToken: string,
+    nonce?: string,
+  ): Promise<AuthResponse>;
   abstract refreshToken(refreshToken: string): Promise<AuthResponse>;
   abstract logout(accessToken: string, refreshToken: string): Promise<void>;
   abstract logoutAllDevices(userId: string): Promise<void>;
+  abstract revokeAppleToken(token: string): Promise<void>;
 }

@@ -26,6 +26,7 @@ import { fetchMicrosoftOAuthProfile } from './helpers/microsoft-oauth.helper';
 import { fetchSlackOAuthProfile } from './helpers/slack-oauth.helper';
 import { fetchGithubOAuthProfile } from './helpers/github-oauth.helper';
 import { verifyAppleIdTokenAndBuildOAuthProfile } from './helpers/apple-oauth.helper';
+import { ApplePrivateKeyService } from './helpers/apple-private-key.service';
 
 @Injectable()
 export class AuthService implements IAuthUseCase {
@@ -39,6 +40,7 @@ export class AuthService implements IAuthUseCase {
     private readonly jwtService: JwtService,
     private readonly blacklistService: TokenBlacklistService,
     private readonly configService: ConfigService,
+    private readonly applePrivateKeyService: ApplePrivateKeyService,
   ) {}
 
   async loginLocal(email: string, password: string): Promise<AuthResponse> {
@@ -152,7 +154,10 @@ export class AuthService implements IAuthUseCase {
     return await this.loginOAuth(profile);
   }
 
-  async loginAppleIdToken(idToken: string): Promise<AuthResponse> {
+  async loginAppleIdToken(
+    idToken: string,
+    nonce?: string,
+  ): Promise<AuthResponse> {
     const clientId = this.configService.get<string>('APPLE_CLIENT_ID');
 
     if (!clientId) {
@@ -165,6 +170,7 @@ export class AuthService implements IAuthUseCase {
     const profile = await verifyAppleIdTokenAndBuildOAuthProfile({
       idToken,
       audience: clientId,
+      nonce,
     });
 
     return await this.loginOAuth(profile);
@@ -248,6 +254,38 @@ export class AuthService implements IAuthUseCase {
 
   async logoutAllDevices(userId: string): Promise<void> {
     await this.refreshTokenRepo.revokeAllByUser(userId);
+  }
+
+  async revokeAppleToken(token: string): Promise<void> {
+    const clientId = this.configService.get<string>('APPLE_CLIENT_ID');
+    if (!clientId) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1097,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const clientSecret =
+      await this.applePrivateKeyService.generateClientSecret();
+
+    const response = await fetch('https://appleid.apple.com/auth/revoke', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        token: token,
+        client_id: clientId,
+        client_secret: clientSecret,
+      }),
+    });
+
+    if (!response.ok && response.status !== 200) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1106,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
   private async generateAuthResponse(

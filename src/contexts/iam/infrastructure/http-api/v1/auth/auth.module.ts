@@ -21,6 +21,8 @@ import { GithubOAuthGuard } from './guards/github-oauth.guard';
 import { GithubStrategy } from './strategies/github.strategy';
 import { AppleOAuthGuard } from './guards/apple-oauth.guard';
 import { AppleStrategy } from './strategies/apple.strategy';
+import { ApplePublicKeysService } from 'src/contexts/iam/application/auth/helpers/apple-public-keys.service';
+import { ApplePrivateKeyService } from 'src/contexts/iam/application/auth/helpers/apple-private-key.service';
 
 @Module({
   imports: [
@@ -53,6 +55,8 @@ import { AppleStrategy } from './strategies/apple.strategy';
     GithubStrategy,
     AppleOAuthGuard,
     AppleStrategy,
+    ApplePublicKeysService,
+    ApplePrivateKeyService,
   ],
   exports: [IAuthUseCase],
 })

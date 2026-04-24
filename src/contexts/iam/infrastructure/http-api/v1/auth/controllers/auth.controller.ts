@@ -40,6 +40,7 @@ import { GithubOAuthGuard } from '../guards/github-oauth.guard';
 import { LoginGithubTokenDto } from '../dtos/login-github-token.dto';
 import { AppleOAuthGuard } from '../guards/apple-oauth.guard';
 import { LoginAppleTokenDto } from '../dtos/login-apple-token.dto';
+import { RevokeAppleTokenDto } from '../dtos/revoke-apple-token.dto';
 
 type OAuthRequest = Request & { user: OAuthProfile };
 
@@ -364,7 +365,23 @@ export class AuthController {
       );
     }
 
-    return await this.authService.loginAppleIdToken(body.idToken);
+    return await this.authService.loginAppleIdToken(body.idToken, body.nonce);
+  }
+
+  @Post('apple/revoke')
+  @ApiOperation({
+    summary: 'Revocar token de Apple',
+    description:
+      'Revoca un token de Apple a través de la API de revocación de Apple.',
+  })
+  @ApiBody({ type: RevokeAppleTokenDto })
+  @ApiOkResponse({ description: 'Token revocado exitosamente.' })
+  @ApiBadRequestResponse({ description: 'Error al revocar el token.' })
+  @ApiInternalServerErrorResponse({
+    description: 'Configuración de Apple Sign-In incompleta.',
+  })
+  async revokeAppleToken(@Body() body: RevokeAppleTokenDto) {
+    return await this.authService.revokeAppleToken(body.token);
   }
 
   @Post('refresh')
