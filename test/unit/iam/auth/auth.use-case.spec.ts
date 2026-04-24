@@ -7,7 +7,7 @@ import { fetchMicrosoftOAuthProfile } from 'src/contexts/iam/application/auth/he
 import { fetchSlackOAuthProfile } from 'src/contexts/iam/application/auth/helpers/slack-oauth.helper';
 import { fetchGithubOAuthProfile } from 'src/contexts/iam/application/auth/helpers/github-oauth.helper';
 import { verifyAppleIdTokenAndBuildOAuthProfile } from 'src/contexts/iam/application/auth/helpers/apple-oauth.helper';
-import { ApplePrivateKeyService } from 'src/contexts/iam/application/auth/helpers/apple-private-key.service';
+import { ApplePrivateKeyService } from 'src/contexts/iam/application/auth/apple/apple-private-key.service';
 import { CollaboratorStatus } from 'src/contexts/shared/domain/entities';
 import { IHashing } from 'src/contexts/shared/domain/interfaces/hashing.interface';
 import { IOAuthAccountRepository } from 'src/contexts/shared/domain/repositories/oauth-account.repository.interface';

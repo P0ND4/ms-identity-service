@@ -3,7 +3,7 @@ import * as jose from 'jose';
 import { OAuthProfile } from 'src/contexts/iam/domain/use-cases/auth/auth-use-case.interface';
 import { FoodaException } from 'src/contexts/shared/domain/exceptions/identity.exception';
 import { FoodaExceptionCodes } from 'src/contexts/shared/domain/exceptions/identity-exception.codes';
-import { ApplePublicKeysService } from './apple-public-keys.service';
+import { ApplePublicKeysService } from '../apple/apple-public-keys.service';
 
 type AppleIdTokenPayload = {
   iss: string;

@@ -26,7 +26,7 @@ import { fetchMicrosoftOAuthProfile } from './helpers/microsoft-oauth.helper';
 import { fetchSlackOAuthProfile } from './helpers/slack-oauth.helper';
 import { fetchGithubOAuthProfile } from './helpers/github-oauth.helper';
 import { verifyAppleIdTokenAndBuildOAuthProfile } from './helpers/apple-oauth.helper';
-import { ApplePrivateKeyService } from './helpers/apple-private-key.service';
+import { ApplePrivateKeyService } from './apple/apple-private-key.service';
 
 @Injectable()
 export class AuthService implements IAuthUseCase {
