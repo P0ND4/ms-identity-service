@@ -1,10 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { TypeOrmRepository } from './base.repository';
 import { Collaborator } from '../../domain/entities';
 import { ICollaboratorRepository } from '../../domain/repositories/collaborator.repository.interface';
 import { TenantContext } from '../tenant/tenant-context.service';
+
+const COLLABORATOR_ROLES_RELATIONS = {
+  collaboratorRoles: {
+    role: {
+      rolePermissions: {
+        permission: true,
+      },
+    },
+  },
+};
 
 @Injectable()
 export class TypeOrmCollaboratorRepository
@@ -14,89 +24,157 @@ export class TypeOrmCollaboratorRepository
   constructor(
     @InjectRepository(Collaborator)
     repository: Repository<Collaborator>,
-    private readonly tenantContext: TenantContext,
+    tenantContext: TenantContext,
+    dataSource: DataSource,
   ) {
-    super(repository);
+    super(repository, tenantContext, dataSource);
   }
 
-  private tableName(table: string): string {
-    return `${this.tenantContext.schemaQuoted}.${table}`;
-  }
+  /* ------------------------------------------------------------------ */
+  /*  Read helpers (withTenantQueryRunner inherited from base)           */
+  /* ------------------------------------------------------------------ */
 
   async findByEmail(email: string): Promise<Collaborator | null> {
-    return (await this.repository
-      .createQueryBuilder('c')
-      .from(this.tableName('collaborators'), 'c')
-      .select([
-        'c.id',
-        'c.email',
-        'c.password_hash as "passwordHash"',
-        'c.first_name as "firstName"',
-        'c.last_name as "lastName"',
-        'c.status',
-        'c.created_at as "createdAt"',
-      ])
-      .where('c.email = :email', { email })
-      .getRawOne()) as unknown as Collaborator | null;
+    return this.withTenantQueryRunner((manager) =>
+      manager.findOne(Collaborator, { where: { email } }),
+    );
   }
 
   async findByEmails(emails: string[]): Promise<Collaborator[]> {
     if (emails.length === 0) return [];
-    return (await this.repository
-      .createQueryBuilder('c')
-      .from(this.tableName('collaborators'), 'c')
-      .where('c.email IN (:...emails)', { emails })
-      .getRawMany()) as unknown as Collaborator[];
+    return this.withTenantQueryRunner((manager) =>
+      manager.find(Collaborator, { where: { email: In(emails) } }),
+    );
   }
 
   async findByIdsWithRoles(ids: string[]): Promise<Collaborator[]> {
     if (ids.length === 0) return [];
-    return (await this.repository
-      .createQueryBuilder('c')
-      .from(this.tableName('collaborators'), 'c')
-      .leftJoinAndSelect('c.collaboratorRoles', 'cr')
-      .leftJoinAndSelect('cr.role', 'r')
-      .leftJoinAndSelect('r.rolePermissions', 'rp')
-      .leftJoinAndSelect('rp.permission', 'p')
-      .where('c.id IN (:...ids)', { ids })
-      .getMany()) as unknown as Collaborator[];
+    return this.withTenantQueryRunner((manager) =>
+      manager.find(Collaborator, {
+        where: { id: In(ids) },
+        relations: COLLABORATOR_ROLES_RELATIONS,
+      }),
+    );
   }
 
   async findByEmailWithRoles(email: string): Promise<Collaborator | null> {
-    return (await this.repository
-      .createQueryBuilder('c')
-      .from(this.tableName('collaborators'), 'c')
-      .leftJoinAndSelect('c.collaboratorRoles', 'cr')
-      .leftJoinAndSelect('cr.role', 'r')
-      .leftJoinAndSelect('r.rolePermissions', 'rp')
-      .leftJoinAndSelect('rp.permission', 'p')
-      .where('c.email = :email', { email })
-      .getOne()) as unknown as Collaborator | null;
+    return this.withTenantQueryRunner((manager) =>
+      manager.findOne(Collaborator, {
+        where: { email },
+        relations: COLLABORATOR_ROLES_RELATIONS,
+      }),
+    );
   }
 
   async findByIdWithRoles(id: string): Promise<Collaborator | null> {
-    return (await this.repository
-      .createQueryBuilder('c')
-      .from(this.tableName('collaborators'), 'c')
-      .leftJoinAndSelect('c.collaboratorRoles', 'cr')
-      .leftJoinAndSelect('cr.role', 'r')
-      .leftJoinAndSelect('r.rolePermissions', 'rp')
-      .leftJoinAndSelect('rp.permission', 'p')
-      .where('c.id = :id', { id })
-      .getOne()) as unknown as Collaborator | null;
+    return this.withTenantQueryRunner((manager) =>
+      manager.findOne(Collaborator, {
+        where: { id },
+        relations: COLLABORATOR_ROLES_RELATIONS,
+      }),
+    );
   }
 
   async findAllWithRoles(): Promise<Collaborator[]> {
-    return (await this.repository
-      .createQueryBuilder('c')
-      .from(this.tableName('collaborators'), 'c')
-      .leftJoinAndSelect('c.collaboratorRoles', 'cr')
-      .leftJoinAndSelect('cr.role', 'r')
-      .leftJoinAndSelect('r.rolePermissions', 'rp')
-      .leftJoinAndSelect('rp.permission', 'p')
-      .orderBy('c.created_at', 'ASC')
-      .getMany()) as unknown as Collaborator[];
+    return this.withTenantQueryRunner((manager) =>
+      manager.find(Collaborator, {
+        relations: COLLABORATOR_ROLES_RELATIONS,
+        order: { createdAt: 'ASC' },
+      }),
+    );
   }
+
+  /* ------------------------------------------------------------------ */
+  /*  CUD operations                                                    */
+  /* ------------------------------------------------------------------ */
+
+  async save(entity: Partial<Collaborator>): Promise<Collaborator> {
+    const collaboratorTable = this.tableName('collaborators');
+    const result = await this.repository.query(
+      `INSERT INTO ${collaboratorTable} 
+       (id, email, password_hash, first_name, last_name, avatar_url, email_verified, status, created_at, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+       RETURNING *`,
+      [
+        entity.email,
+        entity.passwordHash,
+        entity.firstName,
+        entity.lastName,
+        entity.avatarUrl,
+        entity.emailVerified,
+        entity.status,
+      ],
+    );
+    return result[0] as Collaborator;
+  }
+
+  async update(
+    id: string,
+    entity: Partial<Collaborator>,
+  ): Promise<Collaborator> {
+    const collaboratorTable = this.tableName('collaborators');
+    const setClauses: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (entity.email !== undefined) {
+      setClauses.push(`email = $${paramIndex++}`);
+      values.push(entity.email);
+    }
+    if (entity.firstName !== undefined) {
+      setClauses.push(`first_name = $${paramIndex++}`);
+      values.push(entity.firstName);
+    }
+    if (entity.lastName !== undefined) {
+      setClauses.push(`last_name = $${paramIndex++}`);
+      values.push(entity.lastName);
+    }
+    if (entity.avatarUrl !== undefined) {
+      setClauses.push(`avatar_url = $${paramIndex++}`);
+      values.push(entity.avatarUrl);
+    }
+    if (entity.passwordHash !== undefined) {
+      setClauses.push(`password_hash = $${paramIndex++}`);
+      values.push(entity.passwordHash);
+    }
+    if (entity.status !== undefined) {
+      setClauses.push(`status = $${paramIndex++}`);
+      values.push(entity.status);
+    }
+
+    if (setClauses.length > 0) {
+      setClauses.push(`updated_at = NOW()`);
+      values.push(id);
+      await this.repository.query(
+        `UPDATE ${collaboratorTable} SET ${setClauses.join(', ')} WHERE id = $${paramIndex}`,
+        values,
+      );
+    }
+
+    return (await this.findById(id))!;
+  }
+
+  /** Soft-delete (Collaborator entity has @DeleteDateColumn). */
+  async delete(id: string): Promise<void> {
+    const collaboratorTable = this.tableName('collaborators');
+    await this.repository.query(
+      `UPDATE ${collaboratorTable} SET deleted_at = NOW() WHERE id = $1`,
+      [id],
+    );
+  }
+
+  async existsByEmail(email: string): Promise<boolean> {
+    const collaboratorTable = this.tableName('collaborators');
+    const result = await this.repository.query(
+      `SELECT COUNT(*) as count FROM ${collaboratorTable} WHERE email = $1`,
+      [email],
+    );
+    return parseInt(result[0].count, 10) > 0;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  Bulk operations                                                   */
+  /* ------------------------------------------------------------------ */
 
   async bulkCreateWithRoles(params: {
     collaborators: Array<{
@@ -233,14 +311,6 @@ export class TypeOrmCollaboratorRepository
     });
   }
 
-  async updateLastLogin(id: string): Promise<void> {
-    const collaboratorTable = this.tableName('collaborators');
-    await this.repository.query(
-      `UPDATE ${collaboratorTable} SET last_login_at = NOW() WHERE id = $1`,
-      [id],
-    );
-  }
-
   async assignRoles(
     collaboratorId: string,
     roleIds: string[],
@@ -268,103 +338,11 @@ export class TypeOrmCollaboratorRepository
     });
   }
 
-  async existsByEmail(email: string): Promise<boolean> {
-    const collaboratorTable = this.tableName('collaborators');
-    const result = await this.repository.query(
-      `SELECT COUNT(*) as count FROM ${collaboratorTable} WHERE email = $1`,
-      [email],
-    );
-    return parseInt(result[0].count, 10) > 0;
-  }
-
-  async findById(id: string): Promise<Collaborator | null> {
-    return (await this.repository
-      .createQueryBuilder('c')
-      .from(this.tableName('collaborators'), 'c')
-      .where('c.id = :id', { id })
-      .getOne()) as unknown as Collaborator | null;
-  }
-
-  async save(entity: Partial<Collaborator>): Promise<Collaborator> {
-    const collaboratorTable = this.tableName('collaborators');
-    const result = await this.repository.query(
-      `INSERT INTO ${collaboratorTable} 
-       (id, email, password_hash, first_name, last_name, avatar_url, email_verified, status, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-       RETURNING *`,
-      [
-        entity.email,
-        entity.passwordHash,
-        entity.firstName,
-        entity.lastName,
-        entity.avatarUrl,
-        entity.emailVerified,
-        entity.status,
-      ],
-    );
-    return result[0] as unknown as Collaborator;
-  }
-
-  async update(
-    id: string,
-    entity: Partial<Collaborator>,
-  ): Promise<Collaborator> {
-    const collaboratorTable = this.tableName('collaborators');
-    const setClauses: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
-
-    if (entity.email !== undefined) {
-      setClauses.push(`email = $${paramIndex++}`);
-      values.push(entity.email);
-    }
-    if (entity.firstName !== undefined) {
-      setClauses.push(`first_name = $${paramIndex++}`);
-      values.push(entity.firstName);
-    }
-    if (entity.lastName !== undefined) {
-      setClauses.push(`last_name = $${paramIndex++}`);
-      values.push(entity.lastName);
-    }
-    if (entity.avatarUrl !== undefined) {
-      setClauses.push(`avatar_url = $${paramIndex++}`);
-      values.push(entity.avatarUrl);
-    }
-    if (entity.passwordHash !== undefined) {
-      setClauses.push(`password_hash = $${paramIndex++}`);
-      values.push(entity.passwordHash);
-    }
-    if (entity.status !== undefined) {
-      setClauses.push(`status = $${paramIndex++}`);
-      values.push(entity.status);
-    }
-
-    if (setClauses.length > 0) {
-      setClauses.push(`updated_at = NOW()`);
-      values.push(id);
-      await this.repository.query(
-        `UPDATE ${collaboratorTable} SET ${setClauses.join(', ')} WHERE id = $${paramIndex}`,
-        values,
-      );
-    }
-
-    return (await this.findById(id))!;
-  }
-
-  async delete(id: string): Promise<void> {
+  async updateLastLogin(id: string): Promise<void> {
     const collaboratorTable = this.tableName('collaborators');
     await this.repository.query(
-      `UPDATE ${collaboratorTable} SET deleted_at = NOW() WHERE id = $1`,
+      `UPDATE ${collaboratorTable} SET last_login_at = NOW() WHERE id = $1`,
       [id],
     );
-  }
-
-  async exists(id: string): Promise<boolean> {
-    const collaboratorTable = this.tableName('collaborators');
-    const result = await this.repository.query(
-      `SELECT COUNT(*) as count FROM ${collaboratorTable} WHERE id = $1`,
-      [id],
-    );
-    return parseInt(result[0].count, 10) > 0;
   }
 }

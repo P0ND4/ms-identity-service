@@ -29,9 +29,11 @@ import { CreateCollaboratorsDto } from '../dtos/create-collaborators.dto';
 import { UpdateCollaboratorDto } from '../dtos/update-collaborator.dto';
 import { UpdateCollaboratorsDto } from '../dtos/update-collaborators.dto';
 import { UpdateCollaboratorsRolesDto } from '../dtos/update-collaborators-roles.dto';
+import { SkipResponseWrapper } from 'src/contexts/shared/decorators/skip-response-wrapper.decorator';
 
 const COLLABORATOR_STATUS_VALUES = Object.values(CollaboratorStatus);
 
+@SkipResponseWrapper()
 @ApiTags('IAM Collaborators')
 @ApiHeader({
   name: 'x-tenant-id',
@@ -42,6 +44,19 @@ const COLLABORATOR_STATUS_VALUES = Object.values(CollaboratorStatus);
 @Controller(V1_IAM + '/collaborators')
 export class CollaboratorsController {
   constructor(private readonly collaboratorsUseCase: ICollaboratorsUseCase) {}
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Obtener colaborador por ID',
+    description:
+      'Devuelve el perfil del colaborador incluyendo roles, buscado por UUID.',
+  })
+  @ApiOkResponse({ description: 'Colaborador encontrado.' })
+  @ApiBadRequestResponse({ description: 'ID debe ser UUID valido.' })
+  @ApiNotFoundResponse({ description: 'Colaborador no encontrado.' })
+  async getById(@Param('id') id: string) {
+    return await this.collaboratorsUseCase.getMe(id);
+  }
 
   @Get('me')
   @ApiOperation({

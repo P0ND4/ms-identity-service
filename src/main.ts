@@ -1,4 +1,4 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import { API } from './app/routes/route.constants';
 import { CustomValidationPipe } from './contexts/shared/domain/exceptions/custom-validation.pipe';
@@ -36,22 +36,7 @@ async function bootstrap() {
     SwaggerModule.setup('api', app, documentFactory());
   }
 
-  app.use(TenantMiddleware);
-
-  app.use(async (req: any, res: any, next: any) => {
-    const tenantId = req.tenantId;
-
-    if (tenantId) {
-      try {
-        await schemaResolver.ensureSchema(tenantId);
-      } catch (error) {
-        console.error('Error ensuring schema:', error);
-      }
-    }
-
-    next();
-  });
-
+  // HTTP logger must be first so ALL requests are logged
   app.use((req: any, res: any, next: any) => {
     const logger = new Logger('HTTP');
     const { method, originalUrl } = req;
@@ -62,17 +47,39 @@ async function bootstrap() {
       const errorCode = res.errorCode
         ? ` - ${CYAN}${res.errorCode}${RESET}`
         : '';
-      logger.verbose(
-        `${method} ${originalUrl} - ${res.statusCode}${errorCode}`,
-      );
+      logger.log(`${method} ${originalUrl} - ${res.statusCode}${errorCode}`);
     });
+
+    next();
+  });
+
+  app.use((req: any, res: any, next: any) => {
+    const middleware = new TenantMiddleware();
+    middleware.use(req, res, next);
+  });
+
+  const provisioningLogger = new Logger('TenantProvisioning');
+
+  app.use(async (req: any, res: any, next: any) => {
+    const tenantId = req.tenantId;
+
+    if (tenantId && tenantId !== 'system') {
+      try {
+        await schemaResolver.ensureSchema(tenantId);
+      } catch (error) {
+        provisioningLogger.error(
+          `Failed to provision schema for tenant "${tenantId}": ${(error as Error).message}`,
+          (error as Error).stack,
+        );
+      }
+    }
 
     next();
   });
 
   app.useGlobalPipes(new CustomValidationPipe());
   app.useGlobalFilters(new FoodaExceptionFilter());
-  app.useGlobalInterceptors(new ApiResponseInterceptor());
+  app.useGlobalInterceptors(new ApiResponseInterceptor(app.get(Reflector)));
 
   await app.listen(port);
 }

@@ -75,9 +75,8 @@ export class CollaboratorsService implements ICollaboratorsUseCase {
     const exists = await this.collaboratorRepository.existsByEmail(
       params.email,
     );
-    if (exists) {
-      throw new FoodaException(FoodaExceptionCodes.Ex1057, HttpStatus.CONFLICT);
-    }
+    if (exists)
+      throw new FoodaException(FoodaExceptionCodes.Ex1058, HttpStatus.CONFLICT);
 
     const passwordHash = await this.hashingService.hash(params.password);
 
@@ -93,9 +92,7 @@ export class CollaboratorsService implements ICollaboratorsUseCase {
     const roleIds = await this.resolveRoleIds(params.roleKeys ?? []);
     if (roleIds.length === 0) {
       const defaultRole = await this.roleRepository.findDefaultRole();
-      if (defaultRole) {
-        roleIds.push(defaultRole.id);
-      }
+      if (defaultRole) roleIds.push(defaultRole.id);
     }
     if (roleIds.length > 0) {
       await this.collaboratorRepository.assignRoles(
@@ -108,9 +105,10 @@ export class CollaboratorsService implements ICollaboratorsUseCase {
     const collaborator = await this.collaboratorRepository.findByIdWithRoles(
       createdCollaborator.id,
     );
+
     if (!collaborator) {
       throw new FoodaException(
-        FoodaExceptionCodes.Ex1056,
+        FoodaExceptionCodes.Ex1057,
         HttpStatus.NOT_FOUND,
       );
     }

@@ -10,6 +10,7 @@ export const databaseConfig = (
   // If you are going to use a different database, remember to remove the "pg" package.
 
   const entities = [__dirname + '/../**/*.entity{.ts,.js}'];
+  const dbSchema = configService.get<string>('DB_SCHEMA');
 
   return {
     type: 'postgres',
@@ -18,7 +19,7 @@ export const databaseConfig = (
     username: configService.get<string>('DB_USERNAME'),
     password: configService.get<string>('DB_PASSWORD'),
     database: configService.get<string>('DB_DATABASE'),
-    schema: configService.get<string>('DB_SCHEMA') ?? 'public',
+    ...(dbSchema ? { schema: dbSchema } : {}),
     entities,
     synchronize: configService.get<boolean>('DB_SYNCHRONIZE') ?? false,
     extra: {

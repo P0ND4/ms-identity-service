@@ -41,6 +41,7 @@ import { LoginGithubTokenDto } from '../dtos/login-github-token.dto';
 import { AppleOAuthGuard } from '../guards/apple-oauth.guard';
 import { LoginAppleTokenDto } from '../dtos/login-apple-token.dto';
 import { RevokeAppleTokenDto } from '../dtos/revoke-apple-token.dto';
+import { SkipResponseWrapper } from 'src/contexts/shared/decorators/skip-response-wrapper.decorator';
 
 type OAuthRequest = Request & { user: OAuthProfile };
 
@@ -57,6 +58,7 @@ type OAuthRequest = Request & { user: OAuthProfile };
 //    directly (without backend redirect), expose a backend exchange endpoint
 //    (e.g. /login/{provider}/token), validate that provider token server-side,
 //    map it to OAuthProfile, and finally issue this service tokens.
+@SkipResponseWrapper()
 @ApiTags('IAM Autenticacion')
 @ApiHeader({
   name: 'x-tenant-id',

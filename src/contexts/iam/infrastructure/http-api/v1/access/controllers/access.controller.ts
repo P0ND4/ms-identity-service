@@ -26,7 +26,9 @@ import { UpdateRolePermissionsDto } from '../dtos/update-role-permissions.dto';
 import { UpdateRoleDto } from '../dtos/update-role.dto';
 import { UpdateRolesDto } from '../dtos/update-roles.dto';
 import { UpdateRolesPermissionsDto } from '../dtos/update-roles-permissions.dto';
+import { SkipResponseWrapper } from 'src/contexts/shared/decorators/skip-response-wrapper.decorator';
 
+@SkipResponseWrapper()
 @ApiTags('IAM Access')
 @ApiHeader({
   name: 'x-tenant-id',

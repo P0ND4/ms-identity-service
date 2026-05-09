@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { TypeOrmRepository } from './base.repository';
 import { RefreshToken } from '../../domain/entities/refresh-token.entity';
 import { IRefreshTokenRepository } from '../../domain/repositories/refresh-token.repository.interface';
@@ -14,62 +14,34 @@ export class TypeOrmRefreshTokenRepository
   constructor(
     @InjectRepository(RefreshToken)
     repository: Repository<RefreshToken>,
-    private readonly tenantContext: TenantContext,
+    tenantContext: TenantContext,
+    dataSource: DataSource,
   ) {
-    super(repository);
+    super(repository, tenantContext, dataSource);
   }
 
-  private tableName(table: string): string {
-    return `${this.tenantContext.schemaQuoted}.${table}`;
-  }
+  /* ------------------------------------------------------------------ */
+  /*  Read helpers                                                      */
+  /* ------------------------------------------------------------------ */
 
   async findByTokenHash(hash: string): Promise<RefreshToken | null> {
-    return (await this.repository
-      .createQueryBuilder('rt')
-      .from(this.tableName('refresh_tokens'), 'rt')
-      .where('rt.token_hash = :hash', { hash })
-      .getOne()) as unknown as RefreshToken;
-  }
-
-  async revoke(id: string): Promise<void> {
-    const refreshTokensTable = this.tableName('refresh_tokens');
-    await this.repository.query(
-      `UPDATE ${refreshTokensTable} SET revoked_at = NOW() WHERE id = $1`,
-      [id],
+    return this.withTenantQueryRunner((manager) =>
+      manager.findOne(RefreshToken, { where: { tokenHash: hash } }),
     );
   }
 
-  async revokeAllByUser(userId: string): Promise<void> {
-    const refreshTokensTable = this.tableName('refresh_tokens');
-    await this.repository.query(
-      `UPDATE ${refreshTokensTable} SET revoked_at = NOW() WHERE collaborator_id = $1 AND revoked_at IS NULL`,
-      [userId],
-    );
-  }
-
-  async deleteExpired(): Promise<void> {
-    const refreshTokensTable = this.tableName('refresh_tokens');
-    await this.repository.query(
-      `UPDATE ${refreshTokensTable} SET deleted_at = NOW() WHERE expires_at < NOW() AND revoked_at IS NULL`,
-    );
-  }
-
-  async findById(id: string): Promise<RefreshToken | null> {
-    return (await this.repository
-      .createQueryBuilder('rt')
-      .from(this.tableName('refresh_tokens'), 'rt')
-      .where('rt.id = :id', { id })
-      .getOne()) as unknown as RefreshToken;
-  }
+  /* ------------------------------------------------------------------ */
+  /*  CUD operations                                                    */
+  /* ------------------------------------------------------------------ */
 
   async save(entity: Partial<RefreshToken>): Promise<RefreshToken> {
     const refreshTokensTable = this.tableName('refresh_tokens');
     const result = await this.repository.query(
       `INSERT INTO ${refreshTokensTable} 
        (id, token_hash, collaborator_id, expires_at, created_at)
-       VALUES ($1, $2, $3, $4, NOW())
+       VALUES (gen_random_uuid(), $1, $2, $3, NOW())
        RETURNING *`,
-      [entity.id, entity.tokenHash, entity.collaboratorId, entity.expiresAt],
+      [entity.tokenHash, entity.collaboratorId, entity.expiresAt],
     );
     return result[0] as unknown as RefreshToken;
   }
@@ -99,20 +71,30 @@ export class TypeOrmRefreshTokenRepository
     return (await this.findById(id))!;
   }
 
-  async delete(id: string): Promise<void> {
+  /* ------------------------------------------------------------------ */
+  /*  Token management                                                  */
+  /* ------------------------------------------------------------------ */
+
+  async revoke(id: string): Promise<void> {
     const refreshTokensTable = this.tableName('refresh_tokens');
     await this.repository.query(
-      `UPDATE ${refreshTokensTable} SET deleted_at = NOW() WHERE id = $1`,
+      `UPDATE ${refreshTokensTable} SET revoked_at = NOW() WHERE id = $1`,
       [id],
     );
   }
 
-  async exists(id: string): Promise<boolean> {
+  async revokeAllByUser(userId: string): Promise<void> {
     const refreshTokensTable = this.tableName('refresh_tokens');
-    const result = await this.repository.query(
-      `SELECT COUNT(*) as count FROM ${refreshTokensTable} WHERE id = $1`,
-      [id],
+    await this.repository.query(
+      `UPDATE ${refreshTokensTable} SET revoked_at = NOW() WHERE collaborator_id = $1 AND revoked_at IS NULL`,
+      [userId],
     );
-    return parseInt(result[0].count, 10) > 0;
+  }
+
+  async deleteExpired(): Promise<void> {
+    const refreshTokensTable = this.tableName('refresh_tokens');
+    await this.repository.query(
+      `UPDATE ${refreshTokensTable} SET deleted_at = NOW() WHERE expires_at < NOW() AND revoked_at IS NULL`,
+    );
   }
 }

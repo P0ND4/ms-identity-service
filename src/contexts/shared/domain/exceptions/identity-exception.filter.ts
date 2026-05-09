@@ -81,6 +81,12 @@ export class FoodaExceptionFilter implements ExceptionFilter {
       return;
     }
 
+    console.error(
+      `[FoodaExceptionFilter] Raw exception on ${request.method} ${request.originalUrl}:`,
+      exception instanceof Error ? exception.message : String(exception),
+      exception instanceof Error && exception.stack ? `\n${exception.stack}` : '',
+    );
+
     const errorInfo = FoodaExceptionCodes.Ex9999;
     (response as any).errorCode = errorInfo.code;
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json(

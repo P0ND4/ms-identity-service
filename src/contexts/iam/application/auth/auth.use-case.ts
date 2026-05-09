@@ -60,7 +60,7 @@ export class AuthService implements IAuthUseCase {
 
     if (!isPasswordValid) {
       throw new FoodaException(
-        FoodaExceptionCodes.Ex1004,
+        FoodaExceptionCodes.Ex1003,
         HttpStatus.UNAUTHORIZED,
       );
     }

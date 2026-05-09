@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { TypeOrmRepository } from './base.repository';
 import { IRoleRepository } from '../../domain/repositories/role.repository.interface';
 import { Role } from '../../domain/entities/role.entity';
@@ -12,64 +12,116 @@ export class TypeOrmRoleRepository
   extends TypeOrmRepository<Role>
   implements IRoleRepository
 {
+  private static readonly ROLE_PERMISSIONS_RELATIONS = {
+    rolePermissions: { permission: true },
+  };
+
   constructor(
     @InjectRepository(Role)
     repository: Repository<Role>,
     @InjectRepository(RolePermission)
     private readonly rolePermissionRepo: Repository<RolePermission>,
-    private readonly tenantContext: TenantContext,
+    tenantContext: TenantContext,
+    dataSource: DataSource,
   ) {
-    super(repository);
+    super(repository, tenantContext, dataSource);
   }
 
-  private tableName(table: string): string {
-    return `${this.tenantContext.schemaQuoted}.${table}`;
-  }
+  /* ------------------------------------------------------------------ */
+  /*  Read helpers                                                      */
+  /* ------------------------------------------------------------------ */
 
   async findByKey(key: string): Promise<Role | null> {
-    return (await this.repository
-      .createQueryBuilder('r')
-      .from(this.tableName('roles'), 'r')
-      .where('r.key = :key', { key })
-      .getOne()) as unknown as Role | null;
+    return this.withTenantQueryRunner((manager) =>
+      manager.findOne(Role, { where: { key } }),
+    );
   }
 
   async findByKeys(keys: string[]): Promise<Role[]> {
     if (keys.length === 0) return [];
-    return (await this.repository
-      .createQueryBuilder('r')
-      .from(this.tableName('roles'), 'r')
-      .where('r.key IN (:...keys)', { keys })
-      .getMany()) as unknown as Role[];
+    return this.withTenantQueryRunner((manager) =>
+      manager.find(Role, { where: { key: In(keys) } }),
+    );
   }
 
   async findDefaultRole(): Promise<Role | null> {
-    return (await this.repository
-      .createQueryBuilder('r')
-      .from(this.tableName('roles'), 'r')
-      .where('r.is_default = true')
-      .getOne()) as unknown as Role | null;
+    return this.withTenantQueryRunner((manager) =>
+      manager.findOne(Role, { where: { isDefault: true } }),
+    );
   }
 
   async findWithPermissions(id: string): Promise<Role | null> {
-    return (await this.repository
-      .createQueryBuilder('r')
-      .from(this.tableName('roles'), 'r')
-      .leftJoinAndSelect('r.rolePermissions', 'rp')
-      .leftJoinAndSelect('rp.permission', 'p')
-      .where('r.id = :id', { id })
-      .getOne()) as unknown as Role | null;
+    return this.withTenantQueryRunner((manager) =>
+      manager.findOne(Role, {
+        where: { id },
+        relations: TypeOrmRoleRepository.ROLE_PERMISSIONS_RELATIONS,
+      }),
+    );
   }
 
   async findAllWithPermissions(): Promise<Role[]> {
-    return (await this.repository
-      .createQueryBuilder('r')
-      .from(this.tableName('roles'), 'r')
-      .leftJoinAndSelect('r.rolePermissions', 'rp')
-      .leftJoinAndSelect('rp.permission', 'p')
-      .orderBy('r.created_at', 'ASC')
-      .getMany()) as unknown as Role[];
+    return this.withTenantQueryRunner((manager) =>
+      manager.find(Role, {
+        relations: TypeOrmRoleRepository.ROLE_PERMISSIONS_RELATIONS,
+        order: { createdAt: 'ASC' },
+      }),
+    );
   }
+
+  /* ------------------------------------------------------------------ */
+  /*  CUD operations                                                    */
+  /* ------------------------------------------------------------------ */
+
+  async save(entity: Partial<Role>): Promise<Role> {
+    const rolesTable = this.tableName('roles');
+    const result = await this.repository.query(
+      `INSERT INTO ${rolesTable} 
+       (id, key, name, description, is_default, created_at, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW(), NOW())
+       RETURNING *`,
+      [entity.key, entity.name, entity.description, entity.isDefault ?? false],
+    );
+    return result[0] as unknown as Role;
+  }
+
+  async update(id: string, entity: Partial<Role>): Promise<Role> {
+    const rolesTable = this.tableName('roles');
+    const setClauses: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (entity.key !== undefined) {
+      setClauses.push(`key = $${paramIndex++}`);
+      values.push(entity.key);
+    }
+    if (entity.name !== undefined) {
+      setClauses.push(`name = $${paramIndex++}`);
+      values.push(entity.name);
+    }
+    if (entity.description !== undefined) {
+      setClauses.push(`description = $${paramIndex++}`);
+      values.push(entity.description);
+    }
+    if (entity.isDefault !== undefined) {
+      setClauses.push(`is_default = $${paramIndex++}`);
+      values.push(entity.isDefault);
+    }
+
+    if (setClauses.length > 0) {
+      setClauses.push(`updated_at = NOW()`);
+      values.push(id);
+      await this.repository.query(
+        `UPDATE ${rolesTable} SET ${setClauses.join(', ')} WHERE id = $${paramIndex}`,
+        values,
+      );
+    }
+
+    return (await this.findById(id))!;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  Permission management                                             */
+  /* ------------------------------------------------------------------ */
 
   async updateRolePermissions(
     roleId: string,
@@ -180,83 +232,5 @@ export class TypeOrmRoleRepository
       );
       await manager.query(`DELETE FROM ${rolesTable} WHERE id = $1`, [roleId]);
     });
-  }
-
-  async findById(id: string): Promise<Role | null> {
-    return (await this.repository
-      .createQueryBuilder('r')
-      .from(this.tableName('roles'), 'r')
-      .where('r.id = :id', { id })
-      .getOne()) as unknown as Role | null;
-  }
-
-  async findAll(): Promise<Role[]> {
-    return (await this.repository
-      .createQueryBuilder('r')
-      .from(this.tableName('roles'), 'r')
-      .getMany()) as unknown as Role[];
-  }
-
-  async save(entity: Partial<Role>): Promise<Role> {
-    const rolesTable = this.tableName('roles');
-    const result = await this.repository.query(
-      `INSERT INTO ${rolesTable} 
-       (id, key, name, description, is_default, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW(), NOW())
-       RETURNING *`,
-      [entity.key, entity.name, entity.description, entity.isDefault ?? false],
-    );
-    return result[0] as unknown as Role;
-  }
-
-  async update(id: string, entity: Partial<Role>): Promise<Role> {
-    const rolesTable = this.tableName('roles');
-    const setClauses: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
-
-    if (entity.key !== undefined) {
-      setClauses.push(`key = $${paramIndex++}`);
-      values.push(entity.key);
-    }
-    if (entity.name !== undefined) {
-      setClauses.push(`name = $${paramIndex++}`);
-      values.push(entity.name);
-    }
-    if (entity.description !== undefined) {
-      setClauses.push(`description = $${paramIndex++}`);
-      values.push(entity.description);
-    }
-    if (entity.isDefault !== undefined) {
-      setClauses.push(`is_default = $${paramIndex++}`);
-      values.push(entity.isDefault);
-    }
-
-    if (setClauses.length > 0) {
-      setClauses.push(`updated_at = NOW()`);
-      values.push(id);
-      await this.repository.query(
-        `UPDATE ${rolesTable} SET ${setClauses.join(', ')} WHERE id = $${paramIndex}`,
-        values,
-      );
-    }
-
-    return (await this.findById(id))!;
-  }
-
-  async delete(id: string): Promise<void> {
-    const rolesTable = this.tableName('roles');
-    await this.repository.query(`DELETE FROM ${rolesTable} WHERE id = $1`, [
-      id,
-    ]);
-  }
-
-  async exists(id: string): Promise<boolean> {
-    const rolesTable = this.tableName('roles');
-    const result = await this.repository.query(
-      `SELECT COUNT(*) as count FROM ${rolesTable} WHERE id = $1`,
-      [id],
-    );
-    return parseInt(result[0].count, 10) > 0;
   }
 }
