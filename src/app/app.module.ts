@@ -5,6 +5,7 @@ import { databaseConfig } from 'src/config/database.config';
 import { IamContextModule } from 'src/contexts/iam/infrastructure/iam.module';
 import environment from 'src/config/environment.config';
 import { TenantModule } from 'src/contexts/shared/infrastructure/tenant/tenant.module';
+import { MetricsController } from 'src/contexts/shared/metrics.controller';
 
 @Module({
   imports: [
@@ -20,5 +21,6 @@ import { TenantModule } from 'src/contexts/shared/infrastructure/tenant/tenant.m
     TenantModule,
     IamContextModule,
   ],
+  controllers: [MetricsController],
 })
 export class AppModule {}

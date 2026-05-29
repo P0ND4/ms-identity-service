@@ -71,4 +71,5 @@ export abstract class ICollaboratorsUseCase {
     status: CollaboratorStatus,
   ): Promise<CollaboratorSummary>;
   abstract deleteCollaborator(collaboratorId: string): Promise<void>;
+  abstract permanentDeleteCollaborator(collaboratorId: string): Promise<void>;
 }

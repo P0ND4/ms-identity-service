@@ -408,4 +408,18 @@ export class CollaboratorsController {
     await this.collaboratorsUseCase.deleteCollaborator(collaboratorId);
     return { deleted: true };
   }
+
+  @Delete(':id/permanent')
+  @ApiOperation({
+    summary: 'Eliminar colaborador (permanente)',
+    description:
+      'Realiza borrado permanente del colaborador. Usar cuando se requiere eliminar definitivamente un registro.',
+  })
+  @ApiOkResponse({ description: 'Colaborador eliminado permanentemente.' })
+  @ApiNotFoundResponse({ description: 'Colaborador no encontrado.' })
+  @ApiBadRequestResponse({ description: 'id de colaborador invalido.' })
+  async permanentDeleteCollaborator(@Param('id') collaboratorId: string) {
+    await this.collaboratorsUseCase.permanentDeleteCollaborator(collaboratorId);
+    return { deleted: true };
+  }
 }

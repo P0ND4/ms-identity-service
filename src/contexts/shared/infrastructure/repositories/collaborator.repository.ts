@@ -172,6 +172,15 @@ export class TypeOrmCollaboratorRepository
     return parseInt(result[0].count, 10) > 0;
   }
 
+  /** Hard-delete — permanently removes the row from the database. */
+  async permanentDelete(id: string): Promise<void> {
+    const collaboratorTable = this.tableName('collaborators');
+    await this.repository.query(
+      `DELETE FROM ${collaboratorTable} WHERE id = $1`,
+      [id],
+    );
+  }
+
   /* ------------------------------------------------------------------ */
   /*  Bulk operations                                                   */
   /* ------------------------------------------------------------------ */

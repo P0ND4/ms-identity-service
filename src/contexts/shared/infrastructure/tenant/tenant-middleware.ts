@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 
 export const TENANT_HEADER = 'x-tenant-id';
 
-const ALLOWLISTED_PATHS = ['/health', '/api', '/api-json'];
+const ALLOWLISTED_PATHS = ['/health', '/api', '/api-json', '/api/internal/metrics'];
 
 @Injectable()
 export class TenantMiddleware implements NestMiddleware {

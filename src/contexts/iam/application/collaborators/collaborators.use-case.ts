@@ -532,6 +532,26 @@ export class CollaboratorsService implements ICollaboratorsUseCase {
     await this.collaboratorRepository.delete(collaboratorId);
   }
 
+  async permanentDeleteCollaborator(collaboratorId: string): Promise<void> {
+    if (!isUuid(collaboratorId)) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1061,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const collaborator =
+      await this.collaboratorRepository.findById(collaboratorId);
+    if (!collaborator) {
+      throw new FoodaException(
+        FoodaExceptionCodes.Ex1056,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await this.collaboratorRepository.permanentDelete(collaboratorId);
+  }
+
   private async resolveRoleIds(roleKeys: string[]): Promise<string[]> {
     if (roleKeys.length === 0) return [];
 

@@ -44,6 +44,7 @@ async function bootstrap() {
     const RESET = '\x1b[0m';
 
     res.on('finish', () => {
+      if (originalUrl.includes('/internal/')) return;
       const errorCode = res.errorCode
         ? ` - ${CYAN}${res.errorCode}${RESET}`
         : '';

@@ -44,4 +44,5 @@ export abstract class ICollaboratorRepository extends IRepository<Collaborator> 
     assignedBy?: string,
   ): Promise<void>;
   abstract existsByEmail(email: string): Promise<boolean>;
+  abstract permanentDelete(id: string): Promise<void>;
 }
